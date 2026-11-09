@@ -1,0 +1,19 @@
+{
+    # Enable internal certificate authority for local LAN & mobile PWA access
+    local_certs
+}
+
+:8443 {
+    tls internal
+    reverse_proxy api:3080 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto https
+    }
+}
+
+:80 {
+    redir https://{host}:8443{uri} permanent
+}
+
