@@ -35,29 +35,29 @@ flowchart LR
 Establish the secure, private multi-user container baseline, enforce closed family account management, inject the Ezity companion persona, adapt to LibreChat's native design tokens (avoiding iOS skin mismatches), and port high-value conversational UX helpers (Quick Reply Chips, Thinking Accordion, Voice Input, Slash Commands).
 
 ### Task Breakdown
-- [ ] **Task 1.1: Minimal Docker Compose Tailoring**
+- [x] **Task 1.1: Minimal Docker Compose Tailoring**
   - Adjust `docker-compose.yml` to run only `api`, `mongodb`, and `ingress` (Caddy).
   - Disable optional resource-heavy services (`SEARCH=false`, omit `rag_api` and `vectordb`).
   - Configure `.env` with a secure random `CREDS_KEY` and `CREDS_IV` (64-character hex string).
-- [ ] **Task 1.2: Closed Family Authentication Configuration**
+- [x] **Task 1.2: Closed Family Authentication Configuration**
   - Set `ALLOW_REGISTRATION=false` in `.env`.
   - Configure admin invitation scripts (`config/invite-user.js`).
   - Verify local password hashing (bcrypt) and session cookie settings (`COOKIE_SECURE=true`, `SameSite=Lax`).
-- [ ] **Task 1.3: Centralized Ezity AI Persona & Branding Injection**
+- [x] **Task 1.3: Centralized Ezity AI Persona & Branding Injection**
   - Create `config/ezity-soul.js` with `EZITY_SOUL_CORE`.
   - Configure `librechat.yaml` with default model specifications and inject Ezity companion instructions.
   - Replace default branding strings and vector logo with [`src/components/EzityLogo.tsx`](file:///Volumes/En.Sol-SSD/WebProject/hermes-mobile/src/components/EzityLogo.tsx).
-- [ ] **Task 1.4: Mobile Viewport Ergonomics (LibreChat Native Theme)**
+- [x] **Task 1.4: Mobile Viewport Ergonomics (LibreChat Native Theme)**
   - Use LibreChat's native semantic tokens (`bg-surface-primary`, `text-text-primary`, `border-border-medium`) rather than an artificial iOS skin.
   - Add safe-area padding (`pb-[env(safe-area-inset-bottom)]`) to the chat composer to prevent home-indicator collision.
   - Port [`use-virtual-keyboard.ts`](file:///Volumes/En.Sol-SSD/WebProject/hermes-mobile/src/hooks/use-virtual-keyboard.ts) to smoothly dock the composer above the mobile keyboard.
-- [ ] **Task 1.5: Quick Reply Chips & Interactive Question Cards**
+- [x] **Task 1.5: Quick Reply Chips & Interactive Question Cards**
   - Port [`QuickReplyChips.tsx`](file:///Volumes/En.Sol-SSD/WebProject/hermes-mobile/src/components/QuickReplyChips.tsx), [`InteractiveQuestionCard.tsx`](file:///Volumes/En.Sol-SSD/WebProject/hermes-mobile/src/components/InteractiveQuestionCard.tsx), and [`quick-options-parser.ts`](file:///Volumes/En.Sol-SSD/WebProject/hermes-mobile/src/utils/quick-options-parser.ts).
   - Mount chips below assistant chat turns when the model outputs multiple-choice options or suggested next steps for effortless one-tap replies on mobile.
-- [ ] **Task 1.6: Universal Thinking & Reasoning Accordion**
+- [x] **Task 1.6: Universal Thinking & Reasoning Accordion**
   - Port [`ChatThinkingAccordion.tsx`](file:///Volumes/En.Sol-SSD/WebProject/hermes-mobile/src/components/ChatThinkingAccordion.tsx).
   - Automatically parse `<think>`, `<thought>`, and `<reasoning>` blocks from DeepSeek R1 and OpenAI o-series models, collapsing them into a clean collapsible accordion with an elapsed timer.
-- [ ] **Task 1.7: Slash Command Menu & Voice Input Button**
+- [x] **Task 1.7: Slash Command Menu & Voice Input Button**
   - Port [`SlashCommandMenu.tsx`](file:///Volumes/En.Sol-SSD/WebProject/hermes-mobile/src/components/SlashCommandMenu.tsx) to provide instant shortcuts (`/canvas`, `/image`, `/search`, `/mindmap`) upon typing `/`.
   - Port [`VoiceInputButton.tsx`](file:///Volumes/En.Sol-SSD/WebProject/hermes-mobile/src/components/VoiceInputButton.tsx) utilizing browser Web Speech API for hands-free voice dictation.
 
@@ -113,22 +113,22 @@ Mount the CodeMirror 6 Canvas workspace into LibreChat's split panel, persist do
 Enable visual mindmap generation, integrate in-browser rendering for attached PDF, Word, and Excel files, provide conversation folder organization, and support one-tap chat exports.
 
 ### Task Breakdown
-- [ ] **Task 3.1: Canvas Boards Mongoose Schemas & Service**
+- [x] **Task 3.1: Canvas Boards Mongoose Schemas & Service**
   - Implement `CanvasBoard`, `CanvasBoardRevision`, and `CanvasBoardCandidate` schemas.
   - Port `visual-board-service.ts` into `api/server/services/Canvas/visualBoardService.js`.
   - Register `create_mindmap_board`, `read_visual_board`, and `propose_board_edit` AI tools.
-- [ ] **Task 3.2: Visual Mindmap Editor Mounting**
+- [x] **Task 3.2: Visual Mindmap Editor Mounting**
   - Port [`VisualBoardEditor.tsx`](file:///Volumes/En.Sol-SSD/WebProject/hermes-mobile/src/components/canvas/VisualBoardEditor.tsx) and [`mindmap-layout.ts`](file:///Volumes/En.Sol-SSD/WebProject/hermes-mobile/src/lib/mindmap-layout.ts).
   - Add mode toggle in Canvas Header: **[Document Mode] | [Visual Board Mode]**.
   - Verify node dragging, pan/zoom, edge relationship rendering, and hierarchical tree layout.
-- [ ] **Task 3.3: Native In-Browser Document Previewers**
+- [x] **Task 3.3: Native In-Browser Document Previewers**
   - Install dependencies: `react-pdf`, `pdfjs-dist`, `docx-preview`, `exceljs`, `jszip`.
   - Port [`PdfPreview.tsx`](file:///Volumes/En.Sol-SSD/WebProject/hermes-mobile/src/components/PdfPreview.tsx), [`DocxPreview.tsx`](file:///Volumes/En.Sol-SSD/WebProject/hermes-mobile/src/components/DocxPreview.tsx), and [`XlsxPreview.tsx`](file:///Volumes/En.Sol-SSD/WebProject/hermes-mobile/src/components/XlsxPreview.tsx).
   - Mount previewers inside a responsive modal triggered when clicking file attachment chips in chat.
-- [ ] **Task 3.4: Chat Files Drawer & One-Tap Exporter**
+- [x] **Task 3.4: Chat Files Drawer & One-Tap Exporter**
   - Port [`ChatFilesDrawer.tsx`](file:///Volumes/En.Sol-SSD/WebProject/hermes-mobile/src/components/ChatFilesDrawer.tsx) allowing users to inspect all files, images, and documents generated in the current conversation.
   - Port [`ChatExportSheet.tsx`](file:///Volumes/En.Sol-SSD/WebProject/hermes-mobile/src/components/ChatExportSheet.tsx) to export any conversation to Markdown, JSON, or text with one tap.
-- [ ] **Task 3.5: Projects & Folder Hierarchy**
+- [x] **Task 3.5: Projects & Folder Hierarchy**
   - Port [`ProjectsView.tsx`](file:///Volumes/En.Sol-SSD/WebProject/hermes-mobile/src/components/ProjectsView.tsx) to allow family members to group conversations into named folders (*"School"*, *"Vacation"*, *"Cooking"*, *"Coding"*).
 
 ### Milestone 3 Acceptance Gate (GO / NO-GO)
@@ -147,17 +147,17 @@ Enable visual mindmap generation, integrate in-browser rendering for attached PD
 Integrate local ComfyUI image generation with prompt optimization, verify multi-user isolation across all boundaries, and deploy the automated backup runbook.
 
 ### Task Breakdown
-- [ ] **Task 4.1: ComfyUI Integration Tool**
+- [x] **Task 4.1: ComfyUI Integration Tool**
   - Port `gateway-image-client.ts` and `vision-optimizer.ts` into `api/server/services/Tools/comfyImageClient.js`.
   - Expose `generate_image` and `edit_image` tools to models.
   - Implement WebSocket step-progress listener and error normalization.
-- [ ] **Task 4.2: Output Storage & Gallery UI**
+- [x] **Task 4.2: Output Storage & Gallery UI**
   - Save generated PNGs to `uploads/${userId}/images/${fileId}.png`.
   - Port [`RunGeneratedImages.tsx`](file:///Volumes/En.Sol-SSD/WebProject/hermes-mobile/src/components/RunGeneratedImages.tsx) to render image cards in chat turns with download, zoom, and mask editing controls.
-- [ ] **Task 4.3: End-to-End Multi-User Security Audit**
+- [x] **Task 4.3: End-to-End Multi-User Security Audit**
   - Execute automated IDOR test suite: User A attempts to read User B's chats, Canvas documents, visual boards, memories, and images via API.
   - Verify that SSRF blocking rules strictly reject `http://169.254.169.254/` and `http://192.168.1.1/` in custom provider endpoints.
-- [ ] **Task 4.4: Backup Script & Host Runbook Deployment**
+- [x] **Task 4.4: Backup Script & Host Runbook Deployment**
   - Deploy automated daily backup script to cron (dumping MongoDB and archiving `uploads/`).
   - Perform test disaster recovery on a secondary machine; verify full restoration in under 10 minutes.
 
