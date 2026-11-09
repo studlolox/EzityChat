@@ -4,7 +4,7 @@ import { EModelEndpoint } from 'librechat-data-provider';
 import { mkdir, copyFile, rename, unlink, writeFile } from 'fs/promises';
 import type { TFileConfig } from 'librechat-data-provider';
 import type { AppConfig } from '@librechat/data-schemas';
-import { stripCacheBust } from './path';
+import { stripCacheBust, toLocalUrlPath, fromLocalUrlPath } from './path';
 
 export interface LocalStoragePaths {
   publicPath: string;
@@ -57,7 +57,7 @@ export function createLocalFileDeleter({ deleteRagFile, logger }: LocalFileDelet
       ...(req.config.timeouts ? { timeouts: req.config.timeouts } : {}),
     };
     if (!ownerId) throw new Error('Invalid file owner');
-    const cleanFilepath = stripCacheBust(file.filepath);
+    const cleanFilepath = fromLocalUrlPath(stripCacheBust(file.filepath));
     const uploadPrefix = `/uploads/${ownerId}/`;
 
     if (cleanFilepath.startsWith(uploadPrefix)) {
@@ -132,26 +132,29 @@ function resolveContained(directory: string, fileName: string): string {
   return resolvedPath;
 }
 
-/** Creates `directory` if needed and writes `data` to `fileName` inside it atomically. */
+/**
+ * Creates the parent of `fileName` inside `directory` if needed and writes `data` there
+ * atomically. A name with a separator (`nested/avatar.png`) gets its own subdirectory.
+ */
 export async function writeLocalFile(
   directory: string,
   fileName: string,
   data: Buffer | string,
 ): Promise<string> {
   const filePath = resolveContained(directory, fileName);
-  await mkdir(directory, { recursive: true });
+  await mkdir(path.dirname(filePath), { recursive: true });
   await writeFileAtomic(filePath, data);
   return path.join(directory, fileName);
 }
 
-/** Moves a temp upload into `directory` as `fileName`, creating the directory if needed. */
+/** Moves a temp upload into `directory` as `fileName`, creating the parent directory if needed. */
 export async function moveLocalFile(
   sourcePath: string,
   directory: string,
   fileName: string,
 ): Promise<string> {
   const filePath = resolveContained(directory, fileName);
-  await mkdir(directory, { recursive: true });
+  await mkdir(path.dirname(filePath), { recursive: true });
   await replaceAtomically(filePath, (tempPath) => copyFile(sourcePath, tempPath));
   await unlink(sourcePath);
   return path.join(directory, fileName);
@@ -159,8 +162,8 @@ export async function moveLocalFile(
 
 /**
  * Saves a buffer under `publicPath/images/userId` (served statically) or `uploads/userId`
- * (downloaded through the API) and returns its URL path. Rejects a `fileName` that
- * resolves outside that directory before touching the file system.
+ * (downloaded through the API) and returns its percent-encoded URL path. Rejects a `fileName`
+ * that resolves outside that directory, or that cannot be encoded, before touching the file system.
  */
 export async function saveLocalBuffer({
   paths,
@@ -179,6 +182,7 @@ export async function saveLocalBuffer({
     basePath === 'images'
       ? path.join(paths.publicPath, basePath, userId)
       : path.join(paths.uploads, userId);
+  const urlPath = toLocalUrlPath(basePath, userId, fileName);
   await writeLocalFile(directory, fileName, buffer);
-  return path.posix.join('/', basePath, userId, fileName);
+  return urlPath;
 }
