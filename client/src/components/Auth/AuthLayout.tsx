@@ -5,6 +5,7 @@ import { hasPublishedPolicies } from '~/utils/policies';
 import { TranslationKeys, useLocalize } from '~/hooks';
 import SocialLoginRender from './SocialLoginRender';
 import { BlinkAnimation } from './BlinkAnimation';
+import EzityLogo from '~/components/EzityLogo';
 import LegalConsent from './LegalConsent';
 import { Banner } from '../Banners';
 import Footer from './Footer';
@@ -91,12 +92,8 @@ function AuthLayout({
     <div className="bg-surface-primary relative flex min-h-screen flex-col">
       <Banner />
       <BlinkAnimation active={isFetching}>
-        <div className="mt-6 h-10 w-full bg-cover">
-          <img
-            src="assets/logo.svg"
-            className="h-full w-full object-contain"
-            alt={localize('com_ui_logo', { 0: startupConfig?.appTitle ?? 'LibreChat' })}
-          />
+        <div className="mt-6 flex h-12 w-full items-center justify-center">
+          <EzityLogo size={48} decorative={false} />
         </div>
       </BlinkAnimation>
       <DisplayError />

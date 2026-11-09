@@ -34,6 +34,7 @@ import type { TChatProject, TMessage, TConversation } from 'librechat-data-provi
 import type { QueuedMessageContext } from '@librechat/chat';
 import type { SetterOrUpdater } from 'recoil';
 import type { ExtendedFile, FileSetter, ConvoGenerator, TAskFunction } from '~/common';
+import type { SlashCommand } from './SlashCommandMenu';
 import {
   useTextarea,
   useAutoSave,
@@ -43,6 +44,7 @@ import {
   useQueryParams,
   useSubmitMessage,
   useFocusChatEffect,
+  useVirtualKeyboard,
   useCodeWorkspace,
 } from '~/hooks';
 import {
@@ -79,6 +81,7 @@ import useDictation from '~/hooks/Input/useDictation';
 import { useGetStartupConfig } from '~/data-provider';
 import CodeWorkspaceMenu from './CodeWorkspaceMenu';
 import CodeApprovalMenu from './CodeApprovalMenu';
+import SlashCommandMenu from './SlashCommandMenu';
 import TextareaHeader from './TextareaHeader';
 import PromptsCommand from './PromptsCommand';
 import SkillsCommand from './SkillsCommand';
@@ -285,6 +288,7 @@ const ChatForm = memo(function ChatForm({
   });
 
   const pastedTextEdit = usePastedTextEdit({ index, files, setFiles, textAreaRef });
+  useVirtualKeyboard();
 
   /** Provenance, not the filename, decides which chips are pastes: a user can deliberately
    * upload a `pasted-text.txt`. Restored provenance comes from the files draft; marks made
@@ -337,6 +341,35 @@ const ChatForm = memo(function ChatForm({
   const startQueuedInNewChat = useCallback(
     (text: string) => navigate(`/c/new?${new URLSearchParams({ prompt: text, submit: 'true' })}`),
     [navigate],
+  );
+
+  const [showSlashMenu, setShowSlashMenu] = useState(false);
+  useEffect(() => {
+    if (textValue && textValue.startsWith('/') && !textValue.includes('\n')) {
+      setShowSlashMenu(true);
+    } else {
+      setShowSlashMenu(false);
+    }
+  }, [textValue]);
+
+  const handleSelectSlashCommand = useCallback(
+    (cmd: SlashCommand) => {
+      setShowSlashMenu(false);
+      if (cmd.name === 'new') {
+        newConversation({});
+        methods.reset();
+        return;
+      }
+      if (cmd.name === 'clear') {
+        methods.reset();
+        return;
+      }
+      methods.setValue('text', `${cmd.syntax} `);
+      requestAnimationFrame(() => {
+        textAreaRef.current?.focus();
+      });
+    },
+    [newConversation, methods, textAreaRef],
   );
   const { restoreReclaimedSteer, canRestoreToComposer } = useComposerRestore({
     index,
@@ -679,6 +712,13 @@ const ChatForm = memo(function ChatForm({
             conversationId={conversationId}
             agentId={conversation?.agent_id}
           />
+          {showSlashMenu && (
+            <SlashCommandMenu
+              filter={textValue ?? ''}
+              onSelect={handleSelectSlashCommand}
+              onClose={() => setShowSlashMenu(false)}
+            />
+          )}
         </>
       }
       hints={

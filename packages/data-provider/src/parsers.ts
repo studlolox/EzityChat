@@ -411,20 +411,46 @@ export function parseTextParts(
   return result;
 }
 
-const thinkingBlockPattern = /:::thinking([\s\S]*?):::/;
+const closedThinkingPattern =
+  /(?:<think>([\s\S]*?)<\/think>|<thought>([\s\S]*?)<\/thought>|<reasoning>([\s\S]*?)<\/reasoning>|:::thinking([\s\S]*?):::)/i;
+const streamingThinkingPattern = /^(?:<think>|<thought>|<reasoning>)([\s\S]*)$/i;
 
 /**
- * Splits legacy plain-text reasoning from the answer exactly as the message view renders it:
- * the first `:::thinking ... :::` block becomes the collapsible Thoughts, the rest is the answer.
+ * Splits legacy and tag-based plain-text reasoning from the answer:
+ * matches <think>, <thought>, <reasoning>, and :::thinking::: blocks.
  */
 export function parseThinkingContent(text: string): {
   thinkingContent: string;
   regularContent: string;
 } {
-  const thinkingMatch = text.match(thinkingBlockPattern);
+  if (!text || typeof text !== 'string') {
+    return { thinkingContent: '', regularContent: '' };
+  }
+
+  const closedMatch = text.match(closedThinkingPattern);
+  if (closedMatch) {
+    const thinkingContent = (
+      closedMatch[1] ??
+      closedMatch[2] ??
+      closedMatch[3] ??
+      closedMatch[4] ??
+      ''
+    ).trim();
+    const regularContent = text.replace(closedThinkingPattern, '').trim();
+    return { thinkingContent, regularContent };
+  }
+
+  const streamingMatch = text.match(streamingThinkingPattern);
+  if (streamingMatch) {
+    return {
+      thinkingContent: streamingMatch[1].trim(),
+      regularContent: '',
+    };
+  }
+
   return {
-    thinkingContent: thinkingMatch ? thinkingMatch[1].trim() : '',
-    regularContent: thinkingMatch ? text.replace(thinkingBlockPattern, '').trim() : text,
+    thinkingContent: '',
+    regularContent: text,
   };
 }
 

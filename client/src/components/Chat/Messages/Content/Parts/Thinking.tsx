@@ -351,8 +351,6 @@ const Thinking: React.ElementType = memo(({ children }: { children: React.ReactN
     }
   }, []);
 
-  const label = useMemo(() => localize('com_ui_thoughts'), [localize]);
-
   // Extract text content for copy functionality
   const textContent = useMemo(() => {
     if (typeof children === 'string') {
@@ -360,6 +358,21 @@ const Thinking: React.ElementType = memo(({ children }: { children: React.ReactN
     }
     return '';
   }, [children]);
+
+  const wordCount = useMemo(() => {
+    if (textContent) {
+      return textContent.trim().split(/\s+/).filter(Boolean).length;
+    }
+    return 0;
+  }, [textContent]);
+
+  const label = useMemo(() => {
+    const base = localize('com_ui_thoughts');
+    if (wordCount > 0) {
+      return `${base} (${wordCount} words)`;
+    }
+    return base;
+  }, [localize, wordCount]);
 
   if (children == null) {
     return null;
