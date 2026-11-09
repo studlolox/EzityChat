@@ -68,7 +68,7 @@ describe('comfy/client', () => {
           });
         }
         return Promise.reject(new Error(`Unhandled URL: ${url}`));
-      });
+      }) as unknown as typeof fetch;
 
       const client = new ComfyImageClient({
         baseUrl: 'http://localhost:8188',
@@ -89,7 +89,9 @@ describe('comfy/client', () => {
     });
 
     it('throws ComfyGenerationError when ComfyUI is unreachable', async () => {
-      global.fetch = jest.fn().mockRejectedValue(new Error('ECONNREFUSED 127.0.0.1:8188'));
+      global.fetch = jest
+        .fn()
+        .mockRejectedValue(new Error('ECONNREFUSED 127.0.0.1:8188')) as unknown as typeof fetch;
 
       const client = new ComfyImageClient({
         baseUrl: 'http://127.0.0.1:8188',
@@ -134,7 +136,7 @@ describe('comfy/client', () => {
           });
         }
         return Promise.reject(new Error(`Unhandled: ${url}`));
-      });
+      }) as unknown as typeof fetch;
 
       const client = new ComfyImageClient({
         baseUrl: 'http://localhost:8188',

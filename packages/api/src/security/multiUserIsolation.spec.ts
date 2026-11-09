@@ -46,7 +46,7 @@ describe('Multi-User Tenant Isolation & Security Audit (Milestone 4.3)', () => {
         user: { id: userA },
         params: { docId: 'doc_123' },
         query: {},
-      } as unknown as Request;
+      } as never;
       const resA = { status: jest.fn().mockReturnThis(), json: jest.fn() } as unknown as Response;
       await handlers.getDocument(reqA, resA);
       expect(resA.json).toHaveBeenCalledWith(
@@ -58,7 +58,7 @@ describe('Multi-User Tenant Isolation & Security Audit (Milestone 4.3)', () => {
         user: { id: userB },
         params: { docId: 'doc_123' },
         query: {},
-      } as unknown as Request;
+      } as never;
       const resB = { status: jest.fn().mockReturnThis(), json: jest.fn() } as unknown as Response;
       await handlers.getDocument(reqB, resB);
       expect(resB.status).toHaveBeenCalledWith(404);
