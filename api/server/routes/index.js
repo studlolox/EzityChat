@@ -19,6 +19,7 @@ const memories = require('./memories');
 const presets = require('./presets');
 const projects = require('./projects');
 const canvas = require('./canvas');
+const canvasBoards = require('./canvasBoards');
 const prompts = require('./prompts');
 const schedules = require('./schedules');
 const skills = require('./skills');
@@ -82,6 +83,7 @@ module.exports = {
   prompts,
   projects,
   canvas,
+  canvasBoards,
   schedules,
   skills,
   actions,

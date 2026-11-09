@@ -58,7 +58,7 @@ function ThoughtStepRow({ step, isLive, isExpanded, onToggle }: ThoughtStepRowPr
 
   const thoughtLabel = isThoughtRunning
     ? localize('com_ui_thinking')
-    : `${localize('com_ui_thought')} (${wordCount})`;
+    : `${localize('com_ui_thoughts')} (${wordCount})`;
 
   return (
     <div className="relative text-xs">

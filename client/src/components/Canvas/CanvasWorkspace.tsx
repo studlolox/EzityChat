@@ -1,9 +1,16 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAtom } from 'jotai';
-import { Loader2 } from 'lucide-react';
 import { cn } from '@librechat/client';
-import { canvasOpenAtom, activeCanvasDocIdAtom, canvasViewModeAtom } from './state';
+import { Loader2, Network, Plus } from 'lucide-react';
+import {
+  canvasOpenAtom,
+  activeCanvasDocIdAtom,
+  canvasViewModeAtom,
+  canvasModeAtom,
+  activeBoardIdAtom,
+} from './state';
 import MarkdownLite from '~/components/Chat/Messages/Content/MarkdownLite';
+import { VisualBoardEditor } from './VisualBoardEditor';
 import { CanvasCodeEditor } from './CanvasCodeEditor';
 import { CanvasDiffView } from './CanvasDiffView';
 import { CanvasToolbar } from './CanvasToolbar';
@@ -45,6 +52,8 @@ export function CanvasWorkspace({
   const [, setCanvasOpen] = useAtom(canvasOpenAtom);
   const [activeDocId, setActiveDocId] = useAtom(activeCanvasDocIdAtom);
   const [viewMode, setViewMode] = useAtom(canvasViewModeAtom);
+  const [canvasMode, setCanvasMode] = useAtom(canvasModeAtom);
+  const [activeBoardId, setActiveBoardId] = useAtom(activeBoardIdAtom);
 
   const [document, setDocument] = useState<CanvasDocData | null>(null);
   const [currentRevision, setCurrentRevision] = useState<CanvasRevData | null>(null);
@@ -55,6 +64,7 @@ export function CanvasWorkspace({
   const [isLoading, setIsLoading] = useState(true);
   const [isResolvingCandidate, setIsResolvingCandidate] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isCreatingBoard, setIsCreatingBoard] = useState(false);
 
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -62,6 +72,58 @@ export function CanvasWorkspace({
     setCanvasOpen(false);
     if (onClose) onClose();
   }, [setCanvasOpen, onClose]);
+
+  // Load visual board if switching to board mode
+  const loadBoard = useCallback(async () => {
+    if (!conversationId) return;
+    try {
+      const listRes = await fetch(
+        `/api/canvas-boards?convoId=${encodeURIComponent(conversationId)}`,
+        { credentials: 'include' },
+      );
+      if (listRes.ok) {
+        const listData = await listRes.json();
+        if (listData.boards && listData.boards.length > 0 && !activeBoardId) {
+          setActiveBoardId(listData.boards[0]._id);
+        }
+      }
+    } catch {
+      // Ignored
+    }
+  }, [conversationId, activeBoardId, setActiveBoardId]);
+
+  useEffect(() => {
+    if (canvasMode === 'board') {
+      loadBoard();
+    }
+  }, [canvasMode, loadBoard]);
+
+  const handleCreateInitialBoard = async () => {
+    if (!conversationId) return;
+    try {
+      setIsCreatingBoard(true);
+      const res = await fetch('/api/canvas-boards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          conversationId,
+          title: 'Mindmap',
+          rootTopic: 'Main Topic',
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.board?._id) {
+          setActiveBoardId(data.board._id);
+        }
+      }
+    } catch {
+      // Ignored
+    } finally {
+      setIsCreatingBoard(false);
+    }
+  };
 
   // Load document and revisions
   const loadDocument = useCallback(async () => {
@@ -212,6 +274,60 @@ export function CanvasWorkspace({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  if (canvasMode === 'board') {
+    return (
+      <div
+        className={cn(
+          'bg-surface-primary text-text-primary flex h-full w-full flex-col',
+          isMobileSheet && 'border-border-medium rounded-t-3xl border-t shadow-2xl',
+        )}
+      >
+        {isMobileSheet && (
+          <div className="flex w-full items-center justify-center pt-2 pb-1">
+            <div className="bg-border-heavy/60 h-1.5 w-12 rounded-full" />
+          </div>
+        )}
+
+        <CanvasHeader
+          title="Mindmap Board"
+          saveStatus="saved"
+          mode="board"
+          onModeChange={setCanvasMode}
+          onClose={handleClose}
+        />
+
+        <div className="relative flex-1 overflow-hidden">
+          {activeBoardId ? (
+            <VisualBoardEditor boardId={activeBoardId} onClose={handleClose} />
+          ) : (
+            <div className="bg-surface-primary text-text-secondary flex h-full w-full flex-col items-center justify-center p-6 text-center">
+              <Network className="text-text-tertiary mb-3 size-10" />
+              <p className="text-text-primary text-sm font-semibold">
+                {localize('com_ui_canvas_no_mindmap')}
+              </p>
+              <p className="text-text-secondary mt-1 text-xs">
+                {localize('com_ui_canvas_no_mindmap_desc')}
+              </p>
+              <button
+                type="button"
+                onClick={handleCreateInitialBoard}
+                disabled={isCreatingBoard}
+                className="border-border-medium bg-surface-secondary text-text-primary hover:bg-surface-tertiary mt-4 flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-medium transition"
+              >
+                {isCreatingBoard ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Plus className="size-4" />
+                )}
+                <span>{localize('com_ui_canvas_create_mindmap')}</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="bg-surface-primary flex h-full w-full items-center justify-center">
@@ -222,15 +338,29 @@ export function CanvasWorkspace({
 
   if (!document) {
     return (
-      <div className="bg-surface-primary text-text-secondary flex h-full w-full flex-col items-center justify-center p-6 text-center">
-        <p className="text-sm font-medium">{localize('com_ui_canvas_no_document')}</p>
-        <button
-          type="button"
-          onClick={handleClose}
-          className="border-border-medium bg-surface-secondary text-text-primary hover:bg-surface-tertiary mt-4 rounded-xl border px-4 py-1.5 text-xs font-medium transition"
-        >
-          {localize('com_ui_close')}
-        </button>
+      <div
+        className={cn(
+          'bg-surface-primary text-text-primary flex h-full w-full flex-col',
+          isMobileSheet && 'border-border-medium rounded-t-3xl border-t shadow-2xl',
+        )}
+      >
+        <CanvasHeader
+          title="Document"
+          saveStatus="saved"
+          mode="document"
+          onModeChange={setCanvasMode}
+          onClose={handleClose}
+        />
+        <div className="text-text-secondary flex flex-1 flex-col items-center justify-center p-6 text-center">
+          <p className="text-sm font-medium">{localize('com_ui_canvas_no_document')}</p>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="border-border-medium bg-surface-secondary text-text-primary hover:bg-surface-tertiary mt-4 rounded-xl border px-4 py-1.5 text-xs font-medium transition"
+          >
+            {localize('com_ui_close')}
+          </button>
+        </div>
       </div>
     );
   }
@@ -278,6 +408,8 @@ export function CanvasWorkspace({
         language={document.language}
         docType={document.docType}
         saveStatus={saveStatus}
+        mode="document"
+        onModeChange={setCanvasMode}
         onClose={handleClose}
       />
 

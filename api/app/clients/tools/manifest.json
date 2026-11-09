@@ -188,5 +188,26 @@
     "description": "Proposes a non-destructive edit to an existing Canvas document for side-by-side diff review.",
     "agentsOnly": true,
     "authConfig": []
+  },
+  {
+    "name": "Mindmap Board",
+    "pluginKey": "create_mindmap_board",
+    "description": "Creates an interactive hierarchical mindmap board in the Canvas workspace.",
+    "agentsOnly": true,
+    "authConfig": []
+  },
+  {
+    "name": "Mindmap Read",
+    "pluginKey": "read_mindmap_board",
+    "description": "Reads the nodes and edges of an interactive Canvas Mindmap Board.",
+    "agentsOnly": true,
+    "authConfig": []
+  },
+  {
+    "name": "Mindmap Propose Edit",
+    "pluginKey": "propose_board_edit",
+    "description": "Proposes a non-destructive edit to an existing Canvas Mindmap Board for visual diff review.",
+    "agentsOnly": true,
+    "authConfig": []
   }
 ]

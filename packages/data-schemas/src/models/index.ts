@@ -2,8 +2,10 @@ import { createAgentQueuedTurnModel, createAgentQueuedTurnSequenceModel } from '
 import { createAgentTriggerLaneSequenceModel } from './triggerLaneSequence';
 import { createScheduleModel, createScheduleRunModel } from './schedule';
 import { getTenantIndexMigrationHint } from '~/migrations/tenantIndexes';
+import { createCanvasBoardCandidateModel } from './canvasBoardCandidate';
 import { createSkillSyncCredentialModel } from './skillSyncCredential';
 import { createOpenIDRefreshFlightModel } from './openidRefreshFlight';
+import { createCanvasBoardRevisionModel } from './canvasBoardRevision';
 import { createAgentTriggerUserPurgeModel } from './triggerUserPurge';
 import { createRefreshTokenBridgeModel } from './refreshTokenBridge';
 import { createAgentTriggerDeliveryModel } from './triggerDelivery';
@@ -19,6 +21,7 @@ import { createCanvasRevisionModel } from './canvasRevision';
 import { createSkillDeletionModel } from './skillDeletion';
 import { createAgentCategoryModel } from './agentCategory';
 import { createResourceLockModel } from './resourceLock';
+import { createCanvasBoardModel } from './canvasBoard';
 import { createChatProjectModel } from './chatProject';
 import { createAgentApiKeyModel } from './agentApiKey';
 import { createTransactionModel } from './transaction';
@@ -115,6 +118,9 @@ export function createModels(mongoose: typeof import('mongoose')): {
   CanvasDocument: ReturnType<typeof createCanvasDocumentModel>;
   CanvasRevision: ReturnType<typeof createCanvasRevisionModel>;
   CanvasCandidate: ReturnType<typeof createCanvasCandidateModel>;
+  CanvasBoard: ReturnType<typeof createCanvasBoardModel>;
+  CanvasBoardRevision: ReturnType<typeof createCanvasBoardRevisionModel>;
+  CanvasBoardCandidate: ReturnType<typeof createCanvasBoardCandidateModel>;
 } {
   const models = {
     User: createUserModel(mongoose),
@@ -173,6 +179,9 @@ export function createModels(mongoose: typeof import('mongoose')): {
     CanvasDocument: createCanvasDocumentModel(mongoose),
     CanvasRevision: createCanvasRevisionModel(mongoose),
     CanvasCandidate: createCanvasCandidateModel(mongoose),
+    CanvasBoard: createCanvasBoardModel(mongoose),
+    CanvasBoardRevision: createCanvasBoardRevisionModel(mongoose),
+    CanvasBoardCandidate: createCanvasBoardCandidateModel(mongoose),
   };
   /**
    * Background index builds fail silently unless an 'index' listener is

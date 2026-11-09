@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, FileCode2, History, Check, Loader2 } from 'lucide-react';
+import { X, FileCode2, History, Check, Loader2, FileText, Network } from 'lucide-react';
 import { useLocalize } from '~/hooks';
 
 export interface CanvasHeaderProps {
@@ -7,6 +7,8 @@ export interface CanvasHeaderProps {
   language?: string;
   docType?: 'markdown' | 'code';
   saveStatus: 'saved' | 'saving' | 'unsaved' | 'error';
+  mode?: 'document' | 'board';
+  onModeChange?: (mode: 'document' | 'board') => void;
   onClose: () => void;
   onOpenHistory?: () => void;
 }
@@ -16,6 +18,8 @@ export function CanvasHeader({
   language = 'markdown',
   docType = 'markdown',
   saveStatus,
+  mode = 'document',
+  onModeChange,
   onClose,
   onOpenHistory,
 }: CanvasHeaderProps) {
@@ -27,10 +31,42 @@ export function CanvasHeader({
       <div className="flex min-w-0 items-center gap-2.5">
         <FileCode2 className="text-text-secondary size-4 shrink-0" aria-hidden="true" />
         <span className="text-text-primary truncate text-sm font-semibold">{title}</span>
-        <span className="bg-surface-secondary text-2xs text-text-secondary rounded-md px-2 py-0.5 font-mono font-medium uppercase">
-          {language || docType}
-        </span>
+        {mode === 'document' && (
+          <span className="bg-surface-secondary text-2xs text-text-secondary rounded-md px-2 py-0.5 font-mono font-medium uppercase">
+            {language || docType}
+          </span>
+        )}
       </div>
+
+      {/* Segmented Mode Switcher (Document vs Mindmap) */}
+      {onModeChange && (
+        <div className="border-border-light bg-surface-secondary/80 flex items-center rounded-lg border p-0.5">
+          <button
+            type="button"
+            onClick={() => onModeChange('document')}
+            className={`text-2xs flex items-center gap-1 rounded-md px-2 py-1 font-medium transition-colors ${
+              mode === 'document'
+                ? 'bg-surface-primary text-text-primary shadow-xs'
+                : 'text-text-secondary hover:text-text-primary'
+            }`}
+          >
+            <FileText className="size-3" />
+            <span>{localize('com_ui_canvas_document')}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onModeChange('board')}
+            className={`text-2xs flex items-center gap-1 rounded-md px-2 py-1 font-medium transition-colors ${
+              mode === 'board'
+                ? 'bg-surface-primary text-text-primary shadow-xs'
+                : 'text-text-secondary hover:text-text-primary'
+            }`}
+          >
+            <Network className="size-3" />
+            <span>{localize('com_ui_canvas_mindmap')}</span>
+          </button>
+        </div>
+      )}
 
       {/* Save Status & Action Controls */}
       <div className="flex items-center gap-2">
@@ -53,15 +89,14 @@ export function CanvasHeader({
           )}
         </div>
 
-        {onOpenHistory && (
+        {onOpenHistory && mode === 'document' && (
           <button
             type="button"
             onClick={onOpenHistory}
             aria-label={localize('com_ui_canvas_history')}
-            title={localize('com_ui_canvas_history')}
-            className="text-text-secondary hover:bg-surface-secondary hover:text-text-primary flex size-8 cursor-pointer items-center justify-center rounded-lg transition"
+            className="hover:bg-surface-secondary text-text-secondary hover:text-text-primary rounded-lg p-1.5 transition-colors"
           >
-            <History className="size-4" aria-hidden="true" />
+            <History className="size-4" />
           </button>
         )}
 
@@ -69,10 +104,9 @@ export function CanvasHeader({
           type="button"
           onClick={onClose}
           aria-label={localize('com_ui_close')}
-          title={localize('com_ui_close')}
-          className="text-text-secondary hover:bg-surface-secondary hover:text-text-primary flex size-8 cursor-pointer items-center justify-center rounded-lg transition"
+          className="hover:bg-surface-secondary text-text-secondary hover:text-text-primary rounded-lg p-1.5 transition-colors"
         >
-          <X className="size-4" aria-hidden="true" />
+          <X className="size-4" />
         </button>
       </div>
     </div>

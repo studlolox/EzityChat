@@ -25,6 +25,8 @@ import {
 } from '~/data-provider';
 import { getDownloadFilename, logger, sortPagesByRelevance, triggerDownload } from '~/utils';
 import { useMessagePartsHost } from '~/Providers/MessagePartsHostContext';
+import { DocxPreview } from './Previews/DocxPreview';
+import { XlsxPreview } from './Previews/XlsxPreview';
 import { useShareContext } from '~/Providers';
 import { useLocalize } from '~/hooks';
 
@@ -139,6 +141,7 @@ export default function FilePreviewDialog({
 
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [fileBlobUrl, setFileBlobUrl] = useState<string | null>(null);
+  const [fileArrayBuffer, setFileArrayBuffer] = useState<ArrayBuffer | null>(null);
   const [loading, setLoading] = useState(false);
   const [previewError, setPreviewError] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -166,6 +169,7 @@ export default function FilePreviewDialog({
     let objectUrl: string | undefined;
     setFileContent(null);
     setFileBlobUrl(null);
+    setFileArrayBuffer(null);
     setPreviewError(false);
     setLoading(false);
     if (!open || !fileId || !previewKind) {
@@ -188,8 +192,20 @@ export default function FilePreviewDialog({
             setFileContent(text);
           }
         } else {
-          objectUrl = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
-          setFileBlobUrl(objectUrl);
+          if (typeof blob.arrayBuffer === 'function') {
+            try {
+              const arrayBuffer = await blob.arrayBuffer();
+              if (!cancelled) {
+                setFileArrayBuffer(arrayBuffer);
+              }
+            } catch {
+              // Continue in environments without full arrayBuffer support
+            }
+          }
+          if (previewKind === 'pdf') {
+            objectUrl = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+            setFileBlobUrl(objectUrl);
+          }
         }
       } catch {
         if (!cancelled) {
@@ -311,6 +327,20 @@ export default function FilePreviewDialog({
                 </Button>
               )}
             </div>
+          )}
+          {previewKind === 'docx' && fileArrayBuffer && !showExtractedText && (
+            <DocxPreview
+              arrayBuffer={fileArrayBuffer}
+              fileName={fileName}
+              onDownload={handleDownload}
+            />
+          )}
+          {previewKind === 'xlsx' && fileArrayBuffer && !showExtractedText && (
+            <XlsxPreview
+              arrayBuffer={fileArrayBuffer}
+              fileName={fileName}
+              onDownload={handleDownload}
+            />
           )}
           {fileBlobUrl && !showExtractedText && (
             <iframe

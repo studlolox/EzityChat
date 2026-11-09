@@ -116,10 +116,7 @@ describe('Canvas AI Tools', () => {
       const parsed = JSON.parse(rawResult);
       expect(parsed.success).toBe(true);
       expect(parsed.content).toBe('# Roadmap\n- Phase 1');
-      expect(mockDb.getCanvasDocument).toHaveBeenCalledWith({
-        userId,
-        documentId: 'doc-001',
-      });
+      expect(mockDb.getCanvasDocument).toHaveBeenCalledWith(userId, 'doc-001');
     });
 
     it('returns error JSON if document is not found or fails', async () => {
@@ -144,6 +141,7 @@ describe('Canvas AI Tools', () => {
     it('proposes edit and returns candidate ID for user diff review', async () => {
       const tool = createProposeCanvasEditTool({
         userId,
+        conversationId,
         db: mockDb,
       });
 
@@ -160,7 +158,9 @@ describe('Canvas AI Tools', () => {
       expect(parsed.candidateId).toBe('cand-001');
       expect(mockDb.createCanvasCandidate).toHaveBeenCalledWith({
         userId,
+        conversationId,
         documentId: 'doc-001',
+        prompt: 'Add Phase 2',
         patchSummary: 'Add Phase 2',
         proposedContent: '# Roadmap\n- Phase 1\n- Phase 2',
       });

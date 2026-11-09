@@ -1,12 +1,13 @@
 import { useState, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
-import { Upload, Share2 } from 'lucide-react';
+import { Upload, Share2, Folder } from 'lucide-react';
 import { PermissionTypes, Permissions } from 'librechat-data-provider';
 import { useGetSharedLinkQuery } from 'librechat-data-provider/react-query';
 import type { ReactNode } from 'react';
 import type * as t from '~/common';
 import ExportModal from '~/components/Nav/ExportConversation/ExportModal';
 import { ShareButton } from '~/components/Conversations/ConvoOptions';
+import ChatFilesDrawer from '~/components/Chat/ChatFilesDrawer';
 import { useHasAccess, useLocalize } from '~/hooks';
 import store from '~/store';
 
@@ -31,9 +32,11 @@ export default function useExportShare({
   const localize = useLocalize();
   const [showExports, setShowExports] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showFilesDrawer, setShowFilesDrawer] = useState(false);
 
   const shareButtonRef = useRef<HTMLButtonElement>(null);
   const exportButtonRef = useRef<HTMLButtonElement>(null);
+  const filesDrawerButtonRef = useRef<HTMLButtonElement>(null);
 
   const canCreateSharedLinks = useHasAccess({
     permissionType: PermissionTypes.SHARED_LINKS,
@@ -53,6 +56,14 @@ export default function useExportShare({
   });
 
   const items: t.MenuItemProps[] = [
+    {
+      label: 'Chat Files & Artifacts',
+      onClick: () => setShowFilesDrawer(true),
+      icon: <Folder className="text-text-secondary size-4" />,
+      hideOnClick: false,
+      ref: filesDrawerButtonRef,
+      render: (props) => <button {...props} />,
+    },
     {
       label: localize('com_ui_share'),
       onClick: () => setShowShareDialog(true),
@@ -80,6 +91,12 @@ export default function useExportShare({
     hasSharedLink: Boolean(share?.shareId),
     dialogs: exportable ? (
       <>
+        <ChatFilesDrawer
+          open={showFilesDrawer}
+          onOpenChange={setShowFilesDrawer}
+          conversation={conversation}
+          triggerRef={filesDrawerButtonRef}
+        />
         <ExportModal
           open={showExports}
           onOpenChange={setShowExports}

@@ -27,6 +27,8 @@ const {
   ASK_USER_QUESTION_TOOL_NAME,
   createCanvasTool,
   CANVAS_TOOL_NAMES,
+  createCanvasBoardTool,
+  CANVAS_BOARD_TOOL_NAMES,
   resolveWebSearchSSRFAgents,
   buildWebSearchDynamicContext,
   codeExecutionAuthHeaders,
@@ -83,6 +85,9 @@ const {
   createCanvasDocument,
   getCanvasDocument,
   createCanvasCandidate,
+  createCanvasBoard,
+  getCanvasBoard,
+  createCanvasBoardCandidate,
 } = require('~/models');
 
 /** @typedef {typeof import('@librechat/agents/langchain/tools').Tool} ToolConstructor */
@@ -450,6 +455,18 @@ const loadTools = async ({
           userId: user,
           conversationId: options.req?.body?.conversationId || options.req?.query?.conversationId,
           db: { createCanvasDocument, getCanvasDocument, createCanvasCandidate },
+        });
+      continue;
+    } else if (
+      tool === CANVAS_BOARD_TOOL_NAMES.CREATE_MINDMAP_BOARD ||
+      tool === CANVAS_BOARD_TOOL_NAMES.READ_MINDMAP_BOARD ||
+      tool === CANVAS_BOARD_TOOL_NAMES.PROPOSE_BOARD_EDIT
+    ) {
+      requestedTools[tool] = async () =>
+        createCanvasBoardTool(tool, {
+          userId: user,
+          conversationId: options.req?.body?.conversationId || options.req?.query?.conversationId,
+          db: { createCanvasBoard, getCanvasBoard, createCanvasBoardCandidate },
         });
       continue;
     } else if (tool === SET_MEMORY_TOOL_NAME || tool === DELETE_MEMORY_TOOL_NAME) {

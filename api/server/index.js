@@ -458,6 +458,7 @@ const startServer = async () => {
   app.use('/api/presets', routes.presets);
   app.use('/api/projects', routes.projects);
   app.use('/api/canvas', routes.canvas);
+  app.use('/api/canvas-boards', routes.canvasBoards);
   app.use('/api/prompts', routes.prompts);
   app.use('/api/skills', routes.skills);
   app.use('/api/categories', routes.categories);

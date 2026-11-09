@@ -62,7 +62,7 @@ const proposeEditSchema = z.object({
  */
 export function createCreateCanvasDocumentTool({
   userId,
-  conversationId,
+  conversationId = '',
   db,
 }: CanvasToolOptions): DynamicStructuredTool {
   return tool(
@@ -112,10 +112,10 @@ export function createReadCanvasDocumentTool({
   return tool(
     async ({ documentId }) => {
       try {
-        const result = await db.getCanvasDocument({
-          userId,
-          documentId,
-        });
+        const result = await db.getCanvasDocument(userId, documentId);
+        if (!result) {
+          throw new Error(`Document not found: ${documentId}`);
+        }
 
         return JSON.stringify({
           success: true,
@@ -153,14 +153,17 @@ export function createReadCanvasDocumentTool({
  */
 export function createProposeCanvasEditTool({
   userId,
+  conversationId = '',
   db,
-}: Pick<CanvasToolOptions, 'userId' | 'db'>): DynamicStructuredTool {
+}: CanvasToolOptions): DynamicStructuredTool {
   return tool(
     async ({ documentId, patchSummary, proposedContent }) => {
       try {
         const candidate = await db.createCanvasCandidate({
           userId,
+          conversationId,
           documentId,
+          prompt: patchSummary,
           proposedContent,
           patchSummary,
         });

@@ -47,3 +47,6 @@ export { default as scheduleRunSchema } from './scheduleRun';
 export { default as canvasDocumentSchema } from './canvasDocument';
 export { default as canvasRevisionSchema } from './canvasRevision';
 export { default as canvasCandidateSchema } from './canvasCandidate';
+export { default as canvasBoardSchema } from './canvasBoard';
+export { default as canvasBoardRevisionSchema } from './canvasBoardRevision';
+export { default as canvasBoardCandidateSchema } from './canvasBoardCandidate';
