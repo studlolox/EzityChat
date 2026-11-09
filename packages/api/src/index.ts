@@ -93,6 +93,8 @@ export * from './prompts';
 export * from './projects';
 /* Canvas */
 export * from './canvas';
+/* ComfyUI */
+export * from './comfy';
 /* Conversations */
 export * from './conversations';
 /* Messages */

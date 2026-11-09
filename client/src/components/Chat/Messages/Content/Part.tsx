@@ -211,6 +211,9 @@ const tools: Record<string, ToolRenderer> = {
   image_gen_oai: renderImageGen,
   image_edit_oai: renderImageGen,
   gemini_image_gen: renderImageGen,
+  comfyui: renderImageGen,
+  generate_image: renderImageGen,
+  edit_image: renderImageGen,
   /** Dedicated Q&A record: the generic tool card would label the
    *  interrupt-resolved call "cancelled" and dump raw JSON args. */
   ask_user_question: ({ toolCall, isSubmitting, showCursor, onToolExpand }) => (

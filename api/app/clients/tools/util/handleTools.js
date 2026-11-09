@@ -56,6 +56,7 @@ const {
   FluxAPI,
   OpenWeather,
   StructuredSD,
+  ComfyUI,
   StructuredACS,
   TraversaalSearch,
   StructuredWolfram,
@@ -170,6 +171,7 @@ const loadTools = async ({
     open_weather: OpenWeather,
     wolfram: StructuredWolfram,
     'stable-diffusion': StructuredSD,
+    comfyui: ComfyUI,
     'azure-ai-search': StructuredACS,
     traversaal_search: TraversaalSearch,
     tavily_search_results_json: TavilySearchResults,
@@ -256,6 +258,7 @@ const loadTools = async ({
     tavily_search_results_json: timeoutOptions,
     flux: imageGenOptions,
     'stable-diffusion': imageGenOptions,
+    comfyui: imageGenOptions,
     gemini_image_gen: imageGenOptions,
   };
 

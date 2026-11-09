@@ -60,6 +60,9 @@ export function getToolFriendlyNameKeys(): Readonly<Record<string, ToolFriendlyN
     create_mindmap_board: 'com_ui_tool_name_create_mindmap_board',
     read_mindmap_board: 'com_ui_tool_name_read_mindmap_board',
     propose_board_edit: 'com_ui_tool_name_propose_board_edit',
+    comfyui: 'com_ui_tool_name_image_gen',
+    generate_image: 'com_ui_tool_name_image_gen',
+    edit_image: 'com_ui_tool_name_image_edit',
   };
   return toolFriendlyNameKeys!;
 }

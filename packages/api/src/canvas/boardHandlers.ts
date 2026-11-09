@@ -89,6 +89,11 @@ export function createCanvasBoardHandlers(db: CanvasBoardMethods): CanvasBoardHa
           boardId,
         });
 
+        if (!result) {
+          res.status(404).json({ error: 'Canvas board not found' });
+          return;
+        }
+
         res.status(200).json(result);
       } catch (error) {
         if (error instanceof CanvasBoardNotFoundError) {

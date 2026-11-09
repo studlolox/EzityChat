@@ -3855,5 +3855,7 @@
   "com_ui_canvas_coeditor_badge": "Canvas Co-Editor",
   "com_ui_mindmap_badge": "Mindmap",
   "com_ui_topic_prefix": "Topic: {{topic}}",
-  "com_ui_docx_external_blocked": "External media blocked for security: {{images}} image(s), {{links}} link(s)."
+  "com_ui_docx_external_blocked": "External media blocked for security: {{images}} image(s), {{links}} link(s).",
+  "com_ui_generated_with_comfy": "Generated with ComfyUI",
+  "com_ui_copy_prompt": "Copy prompt"
 }
