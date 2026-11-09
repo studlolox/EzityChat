@@ -13,6 +13,9 @@ import { createSubagentContentModel } from './subagentContent';
 import { createSkillSyncStatusModel } from './skillSyncStatus';
 import { createConversationTagModel } from './conversationTag';
 import { createCodeEnvironmentModel } from './codeEnvironment';
+import { createCanvasCandidateModel } from './canvasCandidate';
+import { createCanvasDocumentModel } from './canvasDocument';
+import { createCanvasRevisionModel } from './canvasRevision';
 import { createSkillDeletionModel } from './skillDeletion';
 import { createAgentCategoryModel } from './agentCategory';
 import { createResourceLockModel } from './resourceLock';
@@ -109,6 +112,9 @@ export function createModels(mongoose: typeof import('mongoose')): {
   RefreshTokenBridge: ReturnType<typeof createRefreshTokenBridgeModel>;
   OpenIDRefreshFlight: ReturnType<typeof createOpenIDRefreshFlightModel>;
   ResourceLock: ReturnType<typeof createResourceLockModel>;
+  CanvasDocument: ReturnType<typeof createCanvasDocumentModel>;
+  CanvasRevision: ReturnType<typeof createCanvasRevisionModel>;
+  CanvasCandidate: ReturnType<typeof createCanvasCandidateModel>;
 } {
   const models = {
     User: createUserModel(mongoose),
@@ -164,6 +170,9 @@ export function createModels(mongoose: typeof import('mongoose')): {
     RefreshTokenBridge: createRefreshTokenBridgeModel(mongoose),
     OpenIDRefreshFlight: createOpenIDRefreshFlightModel(mongoose),
     ResourceLock: createResourceLockModel(mongoose),
+    CanvasDocument: createCanvasDocumentModel(mongoose),
+    CanvasRevision: createCanvasRevisionModel(mongoose),
+    CanvasCandidate: createCanvasCandidateModel(mongoose),
   };
   /**
    * Background index builds fail silently unless an 'index' listener is

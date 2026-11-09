@@ -91,6 +91,8 @@ export * from './actions';
 export * from './prompts';
 /* Projects */
 export * from './projects';
+/* Canvas */
+export * from './canvas';
 /* Conversations */
 export * from './conversations';
 /* Messages */

@@ -1777,6 +1777,7 @@
   "com_ui_export_tool": "Tool",
   "com_ui_export_video": "Video",
   "com_ui_failed": "Failed",
+  "com_ui_failure_details": "Failure Details",
   "com_ui_failed_subject": "Failed: {{0}}",
   "com_ui_favorite": "Add to favorites",
   "com_ui_feedback_more": "More...",
@@ -3794,5 +3795,16 @@
   "com_ui_suggested": "Suggested:",
   "com_ui_voice_dictation_unavailable": "Voice dictation unavailable in this browser",
   "com_ui_voice_dictation_start": "Start voice dictation",
-  "com_ui_voice_dictation_stop": "Stop voice dictation"
+  "com_ui_voice_dictation_stop": "Stop voice dictation",
+  "com_ui_canvas_proposal_title": "AI Proposal",
+  "com_ui_canvas_accept": "Accept",
+  "com_ui_canvas_reject": "Reject",
+  "com_ui_canvas_edit": "Edit",
+  "com_ui_canvas_preview": "Preview",
+  "com_ui_canvas_history": "Revision History",
+  "com_ui_canvas_no_document": "No Canvas document open",
+  "com_ui_unsaved": "Unsaved",
+  "com_ui_tool_name_create_canvas": "Creating Canvas Document",
+  "com_ui_tool_name_read_canvas": "Reading Canvas Document",
+  "com_ui_tool_name_propose_canvas": "Proposing Canvas Edit"
 }

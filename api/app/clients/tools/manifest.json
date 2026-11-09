@@ -167,5 +167,26 @@
         "optional": true
       }
     ]
+  },
+  {
+    "name": "Canvas Document",
+    "pluginKey": "create_canvas_document",
+    "description": "Creates a new editable document or code file in the Canvas workspace.",
+    "agentsOnly": true,
+    "authConfig": []
+  },
+  {
+    "name": "Canvas Read",
+    "pluginKey": "read_canvas_document",
+    "description": "Reads the current revision content of a Canvas document.",
+    "agentsOnly": true,
+    "authConfig": []
+  },
+  {
+    "name": "Canvas Propose Edit",
+    "pluginKey": "propose_canvas_edit",
+    "description": "Proposes a non-destructive edit to an existing Canvas document for side-by-side diff review.",
+    "agentsOnly": true,
+    "authConfig": []
   }
 ]

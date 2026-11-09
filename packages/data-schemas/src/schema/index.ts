@@ -44,3 +44,6 @@ export { default as queuedTurnSchema } from './queuedTurn';
 export { default as queuedTurnSequenceSchema } from './queuedTurnSequence';
 export { default as scheduleSchema } from './schedule';
 export { default as scheduleRunSchema } from './scheduleRun';
+export { default as canvasDocumentSchema } from './canvasDocument';
+export { default as canvasRevisionSchema } from './canvasRevision';
+export { default as canvasCandidateSchema } from './canvasCandidate';

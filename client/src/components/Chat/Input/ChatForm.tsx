@@ -1,9 +1,9 @@
 import { memo, useRef, useMemo, useEffect, useState, useCallback } from 'react';
 import { useRecoilValue } from 'recoil';
 import { useWatch } from 'react-hook-form';
-import { useAtom, useAtomValue } from 'jotai';
 import { useNavigate } from 'react-router-dom';
 import { useDirection } from '@radix-ui/react-direction';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import {
   PastedTextDialog,
   QuoteButton,
@@ -74,6 +74,7 @@ import usePastedTextEdit from '~/hooks/Files/usePastedTextEdit';
 import useAskAnswerMode from '~/hooks/Input/useAskAnswerMode';
 import AskUserQuestionPopover from './AskUserQuestionPopover';
 import useAttachTarget from '~/hooks/Input/useAttachTarget';
+import { canvasOpenAtom } from '~/components/Canvas/state';
 import { chatDirectionAtom } from '~/store/chatDirection';
 import ProjectLandingChip from '../ProjectLandingChip';
 import useHasAccess from '~/hooks/Roles/useHasAccess';
@@ -195,6 +196,7 @@ const ChatForm = memo(function ChatForm({
     [conversation?.spec, startupConfig],
   );
   const filesLoading = useMemo(() => hasIncompleteFiles(files), [files]);
+  const setCanvasOpen = useSetAtom(canvasOpenAtom);
   /** Agents and assistants carry their own tool configuration, so the composer's
    *  ephemeral tool controls only apply elsewhere, and a spec can suppress them
    *  outright. Same gate the old `showEphemeralBadges` prop applied. */
@@ -355,6 +357,11 @@ const ChatForm = memo(function ChatForm({
   const handleSelectSlashCommand = useCallback(
     (cmd: SlashCommand) => {
       setShowSlashMenu(false);
+      if (cmd.name === 'canvas') {
+        setCanvasOpen(true);
+        methods.reset();
+        return;
+      }
       if (cmd.name === 'new') {
         newConversation({});
         methods.reset();
@@ -369,7 +376,7 @@ const ChatForm = memo(function ChatForm({
         textAreaRef.current?.focus();
       });
     },
-    [newConversation, methods, textAreaRef],
+    [newConversation, methods, textAreaRef, setCanvasOpen],
   );
   const { restoreReclaimedSteer, canRestoreToComposer } = useComposerRestore({
     index,

@@ -78,22 +78,22 @@ Establish the secure, private multi-user container baseline, enforce closed fami
 Mount the CodeMirror 6 Canvas workspace into LibreChat's split panel, persist documents to MongoDB, enable non-destructive AI patch proposals with side-by-side diff review, and render humanized progress cards for tool executions.
 
 ### Task Breakdown
-- [ ] **Task 2.1: Canvas Mongoose Schemas & Migrations**
+- [x] **Task 2.1: Canvas Mongoose Schemas & Migrations**
   - Implement `CanvasDocument`, `CanvasRevision`, and `CanvasCandidate` schemas in `packages/data-schemas/src/schema/`.
   - Enforce user-scoping index: `{ userId: 1, conversationId: 1 }`.
-- [ ] **Task 2.2: Canvas REST API Handlers**
+- [x] **Task 2.2: Canvas REST API Handlers**
   - Create `api/server/routes/canvas.js` and `api/server/services/Canvas/canvasService.js` (adapted from `hermes-mobile/src/service/canvas-service.ts`).
   - Implement document creation, manual editing, revision listing, and restore endpoints.
   - Implement proposal resolution endpoints: `/candidates/:id/accept` and `/candidates/:id/reject`.
-- [ ] **Task 2.3: Canvas SidePanel & Mobile Sheet Mounting**
+- [x] **Task 2.3: Canvas SidePanel & Mobile Sheet Mounting**
   - Mount [`CanvasWorkspace.tsx`](file:///Volumes/En.Sol-SSD/WebProject/hermes-mobile/src/components/canvas/CanvasWorkspace.tsx) inside LibreChat's resizable split panel (`SidePanelGroup.tsx`).
   - On mobile (< 768px), render Canvas as an overlay slide-up sheet with a top grab handle rather than a cramped split pane.
   - Port CodeMirror 6 editor components: `CanvasCodeEditor.tsx`, `CanvasToolbar.tsx`, `CanvasHeader.tsx`.
-- [ ] **Task 2.4: AI Tool Registration & Diff Review UI**
+- [x] **Task 2.4: AI Tool Registration & Diff Review UI**
   - Register `create_canvas_document`, `read_canvas_document`, and `propose_canvas_edit` tools.
   - Port [`CanvasDiffView.tsx`](file:///Volumes/En.Sol-SSD/WebProject/hermes-mobile/src/components/canvas/CanvasDiffView.tsx) to render side-by-side diffs when a proposal is pending.
   - Wire accept/reject buttons to trigger atomic document revision updates.
-- [ ] **Task 2.5: Humanized Activity Timeline**
+- [x] **Task 2.5: Humanized Activity Timeline**
   - Port [`ChatActivityTimeline.tsx`](file:///Volumes/En.Sol-SSD/WebProject/hermes-mobile/src/components/ChatActivityTimeline.tsx) and [`activity-aggregator.ts`](file:///Volumes/En.Sol-SSD/WebProject/hermes-mobile/src/utils/activity-aggregator.ts).
   - Transform raw JSON tool calls into friendly, readable progress cards (*"Searching the web for recipes..."*, *"Editing Canvas: Project Outline..."*).
 
