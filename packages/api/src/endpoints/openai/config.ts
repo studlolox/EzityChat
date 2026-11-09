@@ -3,8 +3,12 @@ import { Agent, fetch as undiciFetch } from 'undici';
 import { KnownEndpoints, EModelEndpoint, ReasoningParameterFormat } from 'librechat-data-provider';
 import type { Dispatcher } from 'undici';
 import type * as t from '~/types';
+import {
+  getGoogleConfig,
+  getGeminiReasoningEffort,
+  stripGeminiFlashBlockedParams,
+} from '~/endpoints/google/llm';
 import { getOpenAILLMConfig, extractDefaultParams, removeReasoningPayload } from './llm';
-import { getGoogleConfig, stripGeminiFlashBlockedParams } from '~/endpoints/google/llm';
 import { getLLMConfig as getAnthropicLLMConfig } from '~/endpoints/anthropic/llm';
 import { createSSRFSafeAgents, createSSRFSafeUndiciConnect } from '~/auth';
 import { getDirectDispatcher, getProxyDispatcher } from '~/utils/proxy';
@@ -178,6 +182,8 @@ export function getOpenAIConfig(
      * them from the forwarded `addParams` too so the model does not receive
      * params it rejects. `defaultParams` is applied inside `getGoogleConfig`
      * (and only read here for tool detection), so it needs no sanitizing.
+     * The transform drops `thinkingConfig`, so a selected thinking level reaches
+     * the gateway as `reasoning_effort` instead.
      */
     const transformed = transformToOpenAIConfig({
       addParams: stripGeminiFlashBlockedParams(
@@ -190,6 +196,11 @@ export function getOpenAIConfig(
       tools: googleResult.tools,
       llmConfig: googleResult.llmConfig,
       fromEndpoint: EModelEndpoint.google,
+      reasoningEffort: getGeminiReasoningEffort({
+        llmConfig: googleResult.llmConfig,
+        modelOptions,
+        dropParams,
+      }),
     });
     llmConfig = transformed.llmConfig;
     tools = transformed.tools;

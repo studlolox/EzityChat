@@ -253,6 +253,41 @@ export function stripGeminiFlashBlockedParams<T extends Record<string, unknown> 
   return sanitized as T;
 }
 
+/**
+ * Gemini's OpenAI-compatible API takes `reasoning_effort` in place of
+ * `thinkingConfig.thinkingLevel`, on the same `minimal` to `high` scale. Returns
+ * the effort for the level the user selected, as {@link applyGeminiFlashOverrides}
+ * resolved it for the model, so the Google-compatible custom-endpoint path
+ * (`getOpenAIConfig`), which drops `thinkingConfig`, can still forward it.
+ *
+ * Returns `undefined` so the model default applies when no level was selected,
+ * thinking is off, or `thinkingLevel` is dropped. The default level a Flash model
+ * fills in is not a selection and is not forwarded.
+ * @see https://ai.google.dev/gemini-api/docs/openai#thinking
+ */
+export function getGeminiReasoningEffort({
+  llmConfig,
+  modelOptions,
+  dropParams,
+}: {
+  llmConfig: GoogleClientOptions | VertexAIClientOptions;
+  modelOptions?: Partial<t.GoogleParameters>;
+  dropParams?: string[];
+}): string | undefined {
+  const selected = normalizeGoogleThinkingLevel(modelOptions?.thinkingLevel);
+  const resolved = (llmConfig as { thinkingConfig?: GoogleThinkingConfig }).thinkingConfig
+    ?.thinkingLevel;
+  if (
+    selected == null ||
+    resolved == null ||
+    resolved === 'THINKING_LEVEL_UNSPECIFIED' ||
+    dropParams?.includes('thinkingLevel') === true
+  ) {
+    return undefined;
+  }
+  return resolved.toLowerCase();
+}
+
 const urlContextModelRegex = /gemini-(\d+)(?:\.(\d+))?/i;
 const urlContextExcludedModalityRegex = /(?:^|-)(?:image|live|tts|audio)(?:-|$)/;
 
