@@ -2,6 +2,7 @@ import './renderers';
 
 export * from './Attachment';
 export * from './OpenAIImageGen';
+export { default as GeneratedImagesCard } from './GeneratedImagesCard';
 
 export {
   Text,

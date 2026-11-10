@@ -1,6 +1,7 @@
 import React, { useId } from 'react';
 import { Button } from '@librechat/client';
 import type { LucideIcon } from 'lucide-react';
+import EzityLogo from '~/components/EzityLogo';
 import { useLocalize } from '~/hooks';
 import { cn } from '~/utils';
 
@@ -17,8 +18,8 @@ export default function Shell({ icon: Icon, tone, title, children }: ShellProps)
 
   return (
     <div className="bg-surface-primary flex min-h-screen flex-col">
-      <header className="mt-6 h-10 w-full">
-        <img src="assets/logo.svg" className="h-full w-full object-contain" alt="" />
+      <header className="mt-6 flex h-12 w-full items-center justify-center">
+        <EzityLogo size={44} decorative={false} />
       </header>
       <main className="flex grow items-center justify-center p-6">
         <section

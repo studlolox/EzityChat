@@ -15,6 +15,7 @@ import RouteErrorBoundary from './RouteErrorBoundary';
 import StartupLayout from './Layouts/Startup';
 import MarketplaceRoute from './Marketplace';
 import { codeSetupRoute } from './CodeSetup';
+import LibraryRoute from './LibraryRoute';
 import LoginLayout from './Layouts/Login';
 import dashboardRoutes from './Dashboard';
 import WithRum from '~/lib/rum/WithRum';
@@ -195,6 +196,10 @@ export const router = createBrowserRouter(
                 {
                   path: 'agents/:category',
                   element: <MarketplaceRoute />,
+                },
+                {
+                  path: 'library',
+                  element: <LibraryRoute />,
                 },
               ],
             },

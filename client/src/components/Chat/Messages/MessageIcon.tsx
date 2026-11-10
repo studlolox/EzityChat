@@ -1,4 +1,4 @@
-import { useMemo, memo } from 'react';
+import { memo, useMemo, useRef, useState, useEffect } from 'react';
 import { getEndpointField } from 'librechat-data-provider';
 import type { MessageIconProps } from '@librechat/chat/react';
 import ConvoIconURL from '~/components/Endpoints/ConvoIconURL';
@@ -7,6 +7,36 @@ import { useGetEndpointsQuery } from '~/data-provider';
 import Icon from '~/components/Endpoints/Icon';
 import { isImageURL } from '~/utils/icons';
 import { getIconEndpoint } from '~/utils';
+
+export type EzityAnimationState =
+  | 'idle'
+  | 'thinking'
+  | 'tool-use'
+  | 'done'
+  | 'cancelled'
+  | 'failed';
+
+const EZITY_ANIMATIONS: Record<EzityAnimationState, string> = {
+  idle: '/assets/ezity-animations/idle.svg',
+  thinking: '/assets/ezity-animations/thinking.svg',
+  'tool-use': '/assets/ezity-animations/tool-use.svg',
+  done: '/assets/ezity-animations/done.svg',
+  cancelled: '/assets/ezity-animations/cancelled.svg',
+  failed: '/assets/ezity-animations/failed.svg',
+};
+
+function isEzityAvatar(iconURL?: string | null, modelLabel?: string | null): boolean {
+  if (iconURL && (iconURL.includes('ezity') || iconURL.includes('idle.svg'))) {
+    return true;
+  }
+  if (
+    modelLabel &&
+    (modelLabel.includes('Ezity') || modelLabel === 'Ezity AI' || modelLabel === 'Ezity Coder')
+  ) {
+    return true;
+  }
+  return false;
+}
 
 /**
  * Compares only the fields MessageIcon actually renders.
@@ -20,6 +50,10 @@ export function arePropsEqual(prev: MessageIconProps, next: MessageIconProps): b
     [prev.iconData?.iconURL, next.iconData?.iconURL],
     [prev.iconData?.modelLabel, next.iconData?.modelLabel],
     [prev.iconData?.isCreatedByUser, next.iconData?.isCreatedByUser],
+    [prev.iconData?.error, next.iconData?.error],
+    [prev.iconData?.unfinished, next.iconData?.unfinished],
+    [prev.iconData?.isSubmitting, next.iconData?.isSubmitting],
+    [prev.iconData?.hasActiveTool, next.iconData?.hasActiveTool],
     [prev.agent?.name, next.agent?.name],
     [prev.agent?.avatar?.filepath, next.agent?.avatar?.filepath],
     [prev.assistant?.name, next.assistant?.name],
@@ -50,9 +84,66 @@ const MessageIcon = memo(({ iconData, assistant, agent }: MessageIconProps) => {
   }
 
   const iconURL = iconData?.iconURL;
+  const isEzity = !iconData?.isCreatedByUser && isEzityAvatar(iconURL, iconData?.modelLabel);
+
+  const [isDonePlaying, setIsDonePlaying] = useState(false);
+  const prevSubmittingRef = useRef(iconData?.isSubmitting);
+
+  useEffect(() => {
+    if (!isEzity) {
+      return;
+    }
+    if (
+      prevSubmittingRef.current &&
+      !iconData?.isSubmitting &&
+      !iconData?.error &&
+      !iconData?.unfinished
+    ) {
+      setIsDonePlaying(true);
+      const timer = setTimeout(() => {
+        setIsDonePlaying(false);
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+    prevSubmittingRef.current = iconData?.isSubmitting;
+  }, [isEzity, iconData?.isSubmitting, iconData?.error, iconData?.unfinished]);
+
+  const resolvedEzityURL = useMemo(() => {
+    if (!isEzity) {
+      return iconURL;
+    }
+    if (iconData?.error) {
+      return EZITY_ANIMATIONS.failed;
+    }
+    if (iconData?.unfinished) {
+      return EZITY_ANIMATIONS.cancelled;
+    }
+    if (iconData?.isSubmitting) {
+      if (iconData?.hasActiveTool) {
+        return EZITY_ANIMATIONS['tool-use'];
+      }
+      return EZITY_ANIMATIONS.thinking;
+    }
+    if (isDonePlaying) {
+      return EZITY_ANIMATIONS.done;
+    }
+    return EZITY_ANIMATIONS.idle;
+  }, [
+    isEzity,
+    iconData?.error,
+    iconData?.unfinished,
+    iconData?.isSubmitting,
+    iconData?.hasActiveTool,
+    isDonePlaying,
+    iconURL,
+  ]);
+
+  const effectiveIconURL = isEzity ? resolvedEzityURL : iconURL;
+
   const endpoint = useMemo(
-    () => getIconEndpoint({ endpointsConfig, iconURL, endpoint: iconData?.endpoint }),
-    [endpointsConfig, iconURL, iconData?.endpoint],
+    () =>
+      getIconEndpoint({ endpointsConfig, iconURL: effectiveIconURL, endpoint: iconData?.endpoint }),
+    [endpointsConfig, effectiveIconURL, iconData?.endpoint],
   );
 
   const endpointIconURL = useMemo(
@@ -60,10 +151,10 @@ const MessageIcon = memo(({ iconData, assistant, agent }: MessageIconProps) => {
     [endpointsConfig, endpoint],
   );
 
-  if (iconData?.isCreatedByUser !== true && isImageURL(iconURL)) {
+  if (iconData?.isCreatedByUser !== true && isImageURL(effectiveIconURL)) {
     return (
       <ConvoIconURL
-        iconURL={iconURL}
+        iconURL={effectiveIconURL}
         modelLabel={iconData?.modelLabel}
         context="message"
         assistantAvatar={assistantAvatar}

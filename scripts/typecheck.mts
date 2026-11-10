@@ -31,7 +31,9 @@ export function resolveTypecheck(root: string): TypecheckCommand | null {
   }
   try {
     const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc', { paths: [root] });
-    return { checker: 'tsc', command: process.execPath, args: [tsc, '--noEmit'] };
+    const hasHeapLimit = process.env.NODE_OPTIONS?.includes('--max-old-space-size');
+    const args = hasHeapLimit ? [tsc, '--noEmit'] : ['--max-old-space-size=6144', tsc, '--noEmit'];
+    return { checker: 'tsc', command: process.execPath, args };
   } catch {
     return null;
   }

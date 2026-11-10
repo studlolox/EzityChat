@@ -55,3 +55,6 @@ export * from './web';
 /* MCP Servers */
 export * from './mcp';
 export * from './mcpAuthority';
+/* Canvas */
+export * from './canvas';
+export * from './canvasBoard';

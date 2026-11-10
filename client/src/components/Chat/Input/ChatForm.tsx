@@ -1,9 +1,9 @@
 import { memo, useRef, useMemo, useEffect, useState, useCallback } from 'react';
 import { useRecoilValue } from 'recoil';
 import { useWatch } from 'react-hook-form';
-import { useAtom, useAtomValue } from 'jotai';
 import { useNavigate } from 'react-router-dom';
 import { useDirection } from '@radix-ui/react-direction';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import {
   PastedTextDialog,
   QuoteButton,
@@ -34,6 +34,7 @@ import type { TChatProject, TMessage, TConversation } from 'librechat-data-provi
 import type { QueuedMessageContext } from '@librechat/chat';
 import type { SetterOrUpdater } from 'recoil';
 import type { ExtendedFile, FileSetter, ConvoGenerator, TAskFunction } from '~/common';
+import type { SlashCommand } from './SlashCommandMenu';
 import {
   useTextarea,
   useAutoSave,
@@ -43,6 +44,7 @@ import {
   useQueryParams,
   useSubmitMessage,
   useFocusChatEffect,
+  useVirtualKeyboard,
   useCodeWorkspace,
 } from '~/hooks';
 import {
@@ -72,6 +74,7 @@ import usePastedTextEdit from '~/hooks/Files/usePastedTextEdit';
 import useAskAnswerMode from '~/hooks/Input/useAskAnswerMode';
 import AskUserQuestionPopover from './AskUserQuestionPopover';
 import useAttachTarget from '~/hooks/Input/useAttachTarget';
+import { canvasOpenAtom } from '~/components/Canvas/state';
 import { chatDirectionAtom } from '~/store/chatDirection';
 import ProjectLandingChip from '../ProjectLandingChip';
 import useHasAccess from '~/hooks/Roles/useHasAccess';
@@ -79,6 +82,7 @@ import useDictation from '~/hooks/Input/useDictation';
 import { useGetStartupConfig } from '~/data-provider';
 import CodeWorkspaceMenu from './CodeWorkspaceMenu';
 import CodeApprovalMenu from './CodeApprovalMenu';
+import SlashCommandMenu from './SlashCommandMenu';
 import TextareaHeader from './TextareaHeader';
 import PromptsCommand from './PromptsCommand';
 import SkillsCommand from './SkillsCommand';
@@ -192,6 +196,7 @@ const ChatForm = memo(function ChatForm({
     [conversation?.spec, startupConfig],
   );
   const filesLoading = useMemo(() => hasIncompleteFiles(files), [files]);
+  const setCanvasOpen = useSetAtom(canvasOpenAtom);
   /** Agents and assistants carry their own tool configuration, so the composer's
    *  ephemeral tool controls only apply elsewhere, and a spec can suppress them
    *  outright. Same gate the old `showEphemeralBadges` prop applied. */
@@ -285,6 +290,7 @@ const ChatForm = memo(function ChatForm({
   });
 
   const pastedTextEdit = usePastedTextEdit({ index, files, setFiles, textAreaRef });
+  useVirtualKeyboard();
 
   /** Provenance, not the filename, decides which chips are pastes: a user can deliberately
    * upload a `pasted-text.txt`. Restored provenance comes from the files draft; marks made
@@ -337,6 +343,40 @@ const ChatForm = memo(function ChatForm({
   const startQueuedInNewChat = useCallback(
     (text: string) => navigate(`/c/new?${new URLSearchParams({ prompt: text, submit: 'true' })}`),
     [navigate],
+  );
+
+  const [showSlashMenu, setShowSlashMenu] = useState(false);
+  useEffect(() => {
+    if (textValue && textValue.startsWith('/') && !textValue.includes('\n')) {
+      setShowSlashMenu(true);
+    } else {
+      setShowSlashMenu(false);
+    }
+  }, [textValue]);
+
+  const handleSelectSlashCommand = useCallback(
+    (cmd: SlashCommand) => {
+      setShowSlashMenu(false);
+      if (cmd.name === 'canvas') {
+        setCanvasOpen(true);
+        methods.reset();
+        return;
+      }
+      if (cmd.name === 'new') {
+        newConversation({});
+        methods.reset();
+        return;
+      }
+      if (cmd.name === 'clear') {
+        methods.reset();
+        return;
+      }
+      methods.setValue('text', `${cmd.syntax} `);
+      requestAnimationFrame(() => {
+        textAreaRef.current?.focus();
+      });
+    },
+    [newConversation, methods, textAreaRef, setCanvasOpen],
   );
   const { restoreReclaimedSteer, canRestoreToComposer } = useComposerRestore({
     index,
@@ -679,6 +719,13 @@ const ChatForm = memo(function ChatForm({
             conversationId={conversationId}
             agentId={conversation?.agent_id}
           />
+          {showSlashMenu && (
+            <SlashCommandMenu
+              filter={textValue ?? ''}
+              onSelect={handleSelectSlashCommand}
+              onClose={() => setShowSlashMenu(false)}
+            />
+          )}
         </>
       }
       hints={

@@ -68,6 +68,24 @@ function areContentRenderPropsEqual(prev: ContentRenderProps, next: ContentRende
   return areMessageFieldsEqual(prev.message, next.message) && isSameTailRelation(prev, next);
 }
 
+function hasActiveToolCall(content?: TMessage['content']): boolean {
+  if (!Array.isArray(content)) {
+    return false;
+  }
+  for (const part of content) {
+    if (!part || typeof part !== 'object') {
+      continue;
+    }
+    if ('type' in part && part.type === 'tool_call' && 'tool_call' in part) {
+      const call = (part as { tool_call?: { output?: unknown } }).tool_call;
+      if (call && call.output == null) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 const ContentRender: NamedExoticComponent<ContentRenderProps> = memo(function ContentRender({
   message: msg,
   siblingIdx,
@@ -124,6 +142,10 @@ const ContentRender: NamedExoticComponent<ContentRenderProps> = memo(function Co
       iconURL: msg?.iconURL,
       modelLabel: messageLabel,
       isCreatedByUser: msg?.isCreatedByUser,
+      error: msg?.error,
+      unfinished: msg?.unfinished,
+      isSubmitting: isLatestMessage && isSubmitting,
+      hasActiveTool: isLatestMessage && isSubmitting && hasActiveToolCall(msg?.content),
     }),
     [
       messageLabel,
@@ -133,6 +155,11 @@ const ContentRender: NamedExoticComponent<ContentRenderProps> = memo(function Co
       msg?.iconURL,
       msg?.endpoint,
       msg?.isCreatedByUser,
+      msg?.error,
+      msg?.unfinished,
+      msg?.content,
+      isLatestMessage,
+      isSubmitting,
     ],
   );
 

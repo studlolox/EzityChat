@@ -22,7 +22,13 @@ export type ToolFriendlyNameKey =
   | 'com_ui_tool_name_edit_file'
   | 'com_ui_tool_name_delete_memory'
   | 'com_ui_skill'
-  | 'com_ui_tool_name_read_file';
+  | 'com_ui_tool_name_read_file'
+  | 'com_ui_tool_name_create_canvas'
+  | 'com_ui_tool_name_read_canvas'
+  | 'com_ui_tool_name_propose_canvas'
+  | 'com_ui_tool_name_create_mindmap_board'
+  | 'com_ui_tool_name_read_mindmap_board'
+  | 'com_ui_tool_name_propose_board_edit';
 
 let toolFriendlyNameKeys: Readonly<Record<string, ToolFriendlyNameKey>> | undefined;
 
@@ -48,8 +54,17 @@ export function getToolFriendlyNameKeys(): Readonly<Record<string, ToolFriendlyN
     delete_memory: 'com_ui_tool_name_delete_memory',
     skill: 'com_ui_skill',
     read_file: 'com_ui_tool_name_read_file',
+    create_canvas_document: 'com_ui_tool_name_create_canvas',
+    read_canvas_document: 'com_ui_tool_name_read_canvas',
+    propose_canvas_edit: 'com_ui_tool_name_propose_canvas',
+    create_mindmap_board: 'com_ui_tool_name_create_mindmap_board',
+    read_mindmap_board: 'com_ui_tool_name_read_mindmap_board',
+    propose_board_edit: 'com_ui_tool_name_propose_board_edit',
+    comfyui: 'com_ui_tool_name_image_gen',
+    generate_image: 'com_ui_tool_name_image_gen',
+    edit_image: 'com_ui_tool_name_image_edit',
   };
-  return toolFriendlyNameKeys;
+  return toolFriendlyNameKeys!;
 }
 
 export interface ParsedToolName {

@@ -91,11 +91,14 @@ export function getToolIconType(name: string): ToolIconType {
   if (name === 'skill') {
     return 'skill';
   }
-  if (name === 'read_file') {
+  if (name === 'read_file' || name === 'read_canvas_document') {
     return 'read_file';
   }
-  if (name === 'create_file' || name === 'edit_file') {
-    return name;
+  if (name === 'create_file' || name === 'create_canvas_document') {
+    return 'create_file';
+  }
+  if (name === 'edit_file' || name === 'propose_canvas_edit') {
+    return 'edit_file';
   }
   if (name === 'bash_tool' || name === Constants.BASH_PROGRAMMATIC_TOOL_CALLING) {
     return 'bash_tool';

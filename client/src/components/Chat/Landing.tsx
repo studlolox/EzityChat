@@ -137,43 +137,70 @@ export default function Landing({ centerFormOnLanding }: { centerFormOnLanding: 
     ? localize('com_ui_temporary')
     : (resolvedWelcome ?? scheduledGreeting);
 
+  const isDefaultChat = !isTemporary && !entity;
+
   return (
     <div
       className={`flex h-full transform-gpu flex-col items-center justify-center pb-16 transition-all duration-200 ${centerFormOnLanding ? 'max-h-full sm:max-h-0' : 'max-h-full'} ${getDynamicMargin}`}
     >
       <div ref={contentRef} className="flex flex-col items-center gap-0 p-2">
         <div
-          className={`flex ${textHasMultipleLines ? 'flex-col' : 'flex-col md:flex-row'} items-center justify-center gap-2`}
+          className={`flex ${textHasMultipleLines || isDefaultChat ? 'flex-col' : 'flex-col md:flex-row'} items-center justify-center gap-2`}
         >
-          <div className={`relative size-10 justify-center ${textHasMultipleLines ? 'mb-2' : ''}`}>
-            <div className="avatar-stroke size-full rounded-full dark:after:shadow-none">
-              {isTemporary ? (
-                <div className={containerClassName}>
-                  <HatGlasses className="text-text-primary h-2/3 w-2/3" aria-hidden="true" />
-                </div>
-              ) : (
-                <ConvoIcon
-                  agentsMap={agentsMap}
-                  assistantMap={assistantMap}
-                  conversation={conversation}
-                  endpointsConfig={endpointsConfig}
-                  containerClassName={containerClassName}
-                  context="landing"
-                  className="text-text-primary h-2/3 w-2/3"
-                  size={41}
+          {isDefaultChat ? (
+            <div className="relative mb-3 flex items-center justify-center">
+              <div className="relative size-20 transition-transform duration-300 hover:scale-105 sm:size-24">
+                <img
+                  src="assets/ezity-animations/idle.svg"
+                  alt="Ezity AI"
+                  data-testid="ezity-avatar"
+                  className="h-full w-full object-contain drop-shadow-sm select-none"
+                  draggable={false}
                 />
+              </div>
+              {startupConfig?.showBirthdayIcon && (
+                <TooltipAnchor
+                  className="absolute -top-1 -right-1"
+                  description={localize('com_ui_happy_birthday')}
+                  aria-label={localize('com_ui_happy_birthday')}
+                >
+                  <BirthdayIcon />
+                </TooltipAnchor>
               )}
             </div>
-            {startupConfig?.showBirthdayIcon && (
-              <TooltipAnchor
-                className="absolute inset-e-2 bottom-[1.6875rem]"
-                description={localize('com_ui_happy_birthday')}
-                aria-label={localize('com_ui_happy_birthday')}
-              >
-                <BirthdayIcon />
-              </TooltipAnchor>
-            )}
-          </div>
+          ) : (
+            <div
+              className={`relative size-10 justify-center ${textHasMultipleLines ? 'mb-2' : ''}`}
+            >
+              <div className="avatar-stroke size-full rounded-full dark:after:shadow-none">
+                {isTemporary ? (
+                  <div className={containerClassName}>
+                    <HatGlasses className="text-text-primary h-2/3 w-2/3" aria-hidden="true" />
+                  </div>
+                ) : (
+                  <ConvoIcon
+                    agentsMap={agentsMap}
+                    assistantMap={assistantMap}
+                    conversation={conversation}
+                    endpointsConfig={endpointsConfig}
+                    containerClassName={containerClassName}
+                    context="landing"
+                    className="text-text-primary h-2/3 w-2/3"
+                    size={41}
+                  />
+                )}
+              </div>
+              {startupConfig?.showBirthdayIcon && (
+                <TooltipAnchor
+                  className="absolute inset-e-2 bottom-[1.6875rem]"
+                  description={localize('com_ui_happy_birthday')}
+                  aria-label={localize('com_ui_happy_birthday')}
+                >
+                  <BirthdayIcon />
+                </TooltipAnchor>
+              )}
+            </div>
+          )}
           {name ? (
             <div className="flex flex-col items-center gap-0 p-2">
               <SplitText

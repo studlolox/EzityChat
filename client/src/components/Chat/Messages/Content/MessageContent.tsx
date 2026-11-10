@@ -1,4 +1,4 @@
-import { memo, Suspense, useMemo } from 'react';
+import { memo, Suspense, useMemo, useCallback } from 'react';
 import { Alert, DelayedRender } from '@librechat/client';
 import { Constants, parseThinkingContent } from 'librechat-data-provider';
 import {
@@ -9,14 +9,18 @@ import {
 } from '@librechat/chat/components';
 import type { TMessage } from 'librechat-data-provider';
 import type { TMessageContentProps, TDisplayProps } from '~/common';
+import type { ParsedOption } from '~/utils/quick-options-parser';
 import AttachmentRecoveryActions from '~/components/Messages/Content/Error/recovery';
 import { useMessagePartsHost } from '~/Providers/MessagePartsHostContext';
 import useSmoothStreaming from '~/hooks/Messages/useSmoothStreaming';
+import { extractMessageOptions } from '~/utils/quick-options-parser';
+import InteractiveQuestionCard from './InteractiveQuestionCard';
 import Error from '~/components/Messages/Content/Error';
+import { useLocalize, useSubmitMessage } from '~/hooks';
+import QuickReplyChips from './QuickReplyChips';
 import MarkdownLite from './MarkdownLite';
 import EditMessage from './EditMessage';
 import Thinking from './Parts/Thinking';
-import { useLocalize } from '~/hooks';
 import Markdown from './Markdown';
 import { cn } from '~/utils';
 
@@ -174,6 +178,21 @@ const MessageContent = ({
   const { thinkingContent, regularContent } = useMemo(() => parseThinkingContent(text), [text]);
   const showRegularCursor = useMemo(() => isLast && isSubmitting, [isLast, isSubmitting]);
 
+  const { submitMessage } = useSubmitMessage();
+  const optionsData = useMemo(() => {
+    if (message?.isCreatedByUser || isSubmitting) {
+      return null;
+    }
+    return extractMessageOptions(regularContent);
+  }, [message?.isCreatedByUser, isSubmitting, regularContent]);
+
+  const handleSelectOption = useCallback(
+    (opt: ParsedOption) => {
+      submitMessage({ text: opt.value });
+    },
+    [submitMessage],
+  );
+
   const unfinishedMessage = useMemo(
     () =>
       !isSubmitting && unfinished ? (
@@ -206,6 +225,23 @@ const MessageContent = ({
         {...props}
       />
       {unfinishedMessage}
+      {isLast &&
+        !isSubmitting &&
+        optionsData &&
+        (optionsData.isQuestion ? (
+          <InteractiveQuestionCard
+            question={optionsData.question}
+            options={optionsData.options}
+            onConfirm={handleSelectOption}
+            disabled={isSubmitting}
+          />
+        ) : (
+          <QuickReplyChips
+            options={optionsData.options}
+            onSelect={handleSelectOption}
+            disabled={isSubmitting}
+          />
+        ))}
     </>
   );
 };

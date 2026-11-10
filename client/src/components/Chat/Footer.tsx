@@ -95,9 +95,9 @@ function Footer({ className, startupConfig, configuredOnly = false }: FooterProp
   /** The generic disclaimer is the part a conversation drops; the operator's own footer is not. */
   const genericFooter = configuredOnly
     ? ''
-    : '[LibreChat ' +
+    : '[Ezity AI ' +
       Constants.VERSION +
-      '](https://librechat.ai) - ' +
+      '](https://ezity.ai) - ' +
       localize('com_ui_latest_footer');
   const mainContent = configuredFooter ?? genericFooter;
   const mainContentParts = mainContent === '' ? [] : mainContent.split('|');

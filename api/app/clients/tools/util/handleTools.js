@@ -25,6 +25,10 @@ const {
   DELETE_MEMORY_TOOL_NAME,
   createAskUserQuestionTool,
   ASK_USER_QUESTION_TOOL_NAME,
+  createCanvasTool,
+  CANVAS_TOOL_NAMES,
+  createCanvasBoardTool,
+  CANVAS_BOARD_TOOL_NAMES,
   resolveWebSearchSSRFAgents,
   buildWebSearchDynamicContext,
   codeExecutionAuthHeaders,
@@ -52,6 +56,7 @@ const {
   FluxAPI,
   OpenWeather,
   StructuredSD,
+  ComfyUI,
   StructuredACS,
   TraversaalSearch,
   StructuredWolfram,
@@ -73,7 +78,18 @@ const { primeFiles: primeCodeFiles } = require('~/server/services/Files/Code/pro
 const { loadAuthValues } = require('~/server/services/Tools/credentials');
 const { getMCPServerTools, checkCapability } = require('~/server/services/Config');
 const { getMCPServersRegistry } = require('~/config');
-const { getRoleByName, setMemory, deleteMemory, getFormattedMemories } = require('~/models');
+const {
+  getRoleByName,
+  setMemory,
+  deleteMemory,
+  getFormattedMemories,
+  createCanvasDocument,
+  getCanvasDocument,
+  createCanvasCandidate,
+  createCanvasBoard,
+  getCanvasBoard,
+  createCanvasBoardCandidate,
+} = require('~/models');
 
 /** @typedef {typeof import('@librechat/agents/langchain/tools').Tool} ToolConstructor */
 /** @typedef {import('@librechat/agents/langchain/tools').Tool} Tool */
@@ -155,6 +171,7 @@ const loadTools = async ({
     open_weather: OpenWeather,
     wolfram: StructuredWolfram,
     'stable-diffusion': StructuredSD,
+    comfyui: ComfyUI,
     'azure-ai-search': StructuredACS,
     traversaal_search: TraversaalSearch,
     tavily_search_results_json: TavilySearchResults,
@@ -241,6 +258,7 @@ const loadTools = async ({
     tavily_search_results_json: timeoutOptions,
     flux: imageGenOptions,
     'stable-diffusion': imageGenOptions,
+    comfyui: imageGenOptions,
     gemini_image_gen: imageGenOptions,
   };
 
@@ -429,6 +447,30 @@ const loadTools = async ({
       continue;
     } else if (tool === ASK_USER_QUESTION_TOOL_NAME) {
       requestedTools[tool] = async () => createAskUserQuestionTool();
+      continue;
+    } else if (
+      tool === CANVAS_TOOL_NAMES.CREATE_CANVAS_DOCUMENT ||
+      tool === CANVAS_TOOL_NAMES.READ_CANVAS_DOCUMENT ||
+      tool === CANVAS_TOOL_NAMES.PROPOSE_CANVAS_EDIT
+    ) {
+      requestedTools[tool] = async () =>
+        createCanvasTool(tool, {
+          userId: user,
+          conversationId: options.req?.body?.conversationId || options.req?.query?.conversationId,
+          db: { createCanvasDocument, getCanvasDocument, createCanvasCandidate },
+        });
+      continue;
+    } else if (
+      tool === CANVAS_BOARD_TOOL_NAMES.CREATE_MINDMAP_BOARD ||
+      tool === CANVAS_BOARD_TOOL_NAMES.READ_MINDMAP_BOARD ||
+      tool === CANVAS_BOARD_TOOL_NAMES.PROPOSE_BOARD_EDIT
+    ) {
+      requestedTools[tool] = async () =>
+        createCanvasBoardTool(tool, {
+          userId: user,
+          conversationId: options.req?.body?.conversationId || options.req?.query?.conversationId,
+          db: { createCanvasBoard, getCanvasBoard, createCanvasBoardCandidate },
+        });
       continue;
     } else if (tool === SET_MEMORY_TOOL_NAME || tool === DELETE_MEMORY_TOOL_NAME) {
       requestedTools[tool] = () =>

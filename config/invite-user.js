@@ -25,8 +25,9 @@ const connect = require('./connect');
 
   // Check if email service is enabled
   if (!checkEmailConfig()) {
-    coloredConsole.red('Error: Email service is not enabled!');
-    silentExit(1);
+    coloredConsole.orange(
+      'Note: Email service is not configured. An invite link will be generated directly.',
+    );
   }
 
   // Get the email of the user to be invited

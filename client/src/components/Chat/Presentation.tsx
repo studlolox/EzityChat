@@ -11,8 +11,10 @@ import useArtifactsRegistryLifetime from '~/hooks/Artifacts/useArtifactsRegistry
 import { MessageSurfaceContext } from '~/components/Chat/Messages/ui/surface';
 import DragDropWrapper from '~/components/Chat/Input/Files/DragDropWrapper';
 import UndockedArtifacts from '~/components/Artifacts/UndockedArtifacts';
+import CanvasWorkspace from '~/components/Canvas/CanvasWorkspace';
 import { artifactsUndocked } from '~/components/Artifacts/state';
 import { EditorProvider, ArtifactsProvider } from '~/Providers';
+import { canvasOpenAtom } from '~/components/Canvas/state';
 import { SidePanelGroup } from '~/components/SidePanel';
 import AppChatSurface from '~/components/Chat/Surface';
 import { useGetStartupConfig } from '~/data-provider';
@@ -47,6 +49,7 @@ export default function Presentation({
   const conversationAgentId = useRecoilValue(store.conversationAgentIdByIndex(0));
   const isSubmitting = useIsSubmitting(0);
   const isUndocked = useAtomValue(artifactsUndocked);
+  const canvasOpen = useAtomValue(canvasOpenAtom);
   const selectedSubagent = useAtomValue(activeSubagentPanel);
   const setSelectedSubagent = useSetAtom(activeSubagentPanel);
   const resetSelectedSubagent = useCallback(() => setSelectedSubagent(null), [setSelectedSubagent]);
@@ -124,9 +127,20 @@ export default function Presentation({
     );
   }, [conversationId, selectedSubagent]);
 
+  const canvasElement = useMemo(() => {
+    if (canvasOpen) {
+      return (
+        <Suspense fallback={null}>
+          <CanvasWorkspace conversationId={conversationId ?? ''} />
+        </Suspense>
+      );
+    }
+    return null;
+  }, [canvasOpen, conversationId]);
+
   /* Undocked, the pane renders into its own window: the side panel gives its
    * width back to the conversation instead of holding an empty column. */
-  const panelElement = (isUndocked ? null : artifactsElement) ?? subagentElement;
+  const panelElement = canvasElement ?? (isUndocked ? null : artifactsElement) ?? subagentElement;
 
   return (
     <DragDropWrapper className="bg-surface-canvas relative flex w-full grow overflow-hidden">

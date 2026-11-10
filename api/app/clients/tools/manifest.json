@@ -92,6 +92,19 @@
     "authConfig": []
   },
   {
+    "name": "ComfyUI",
+    "pluginKey": "comfyui",
+    "description": "Generate and edit images using the local ComfyUI Qwen-Image 2.1 engine.",
+    "icon": "assets/comfyui.svg",
+    "authConfig": [
+      {
+        "authField": "COMFYUI_URL",
+        "label": "ComfyUI Instance URL",
+        "description": "The URL of the ComfyUI server (default: http://127.0.0.1:8188)."
+      }
+    ]
+  },
+  {
     "name": "Stable Diffusion",
     "pluginKey": "stable-diffusion",
     "description": "Generate photo-realistic images given any text input.",
@@ -167,5 +180,47 @@
         "optional": true
       }
     ]
+  },
+  {
+    "name": "Canvas Document",
+    "pluginKey": "create_canvas_document",
+    "description": "Creates a new editable document or code file in the Canvas workspace.",
+    "agentsOnly": true,
+    "authConfig": []
+  },
+  {
+    "name": "Canvas Read",
+    "pluginKey": "read_canvas_document",
+    "description": "Reads the current revision content of a Canvas document.",
+    "agentsOnly": true,
+    "authConfig": []
+  },
+  {
+    "name": "Canvas Propose Edit",
+    "pluginKey": "propose_canvas_edit",
+    "description": "Proposes a non-destructive edit to an existing Canvas document for side-by-side diff review.",
+    "agentsOnly": true,
+    "authConfig": []
+  },
+  {
+    "name": "Mindmap Board",
+    "pluginKey": "create_mindmap_board",
+    "description": "Creates an interactive hierarchical mindmap board in the Canvas workspace.",
+    "agentsOnly": true,
+    "authConfig": []
+  },
+  {
+    "name": "Mindmap Read",
+    "pluginKey": "read_mindmap_board",
+    "description": "Reads the nodes and edges of an interactive Canvas Mindmap Board.",
+    "agentsOnly": true,
+    "authConfig": []
+  },
+  {
+    "name": "Mindmap Propose Edit",
+    "pluginKey": "propose_board_edit",
+    "description": "Proposes a non-destructive edit to an existing Canvas Mindmap Board for visual diff review.",
+    "agentsOnly": true,
+    "authConfig": []
   }
 ]

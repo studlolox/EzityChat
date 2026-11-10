@@ -129,6 +129,24 @@ export type {
   ListChatProjectsResult,
   UpdateChatProjectInput,
 } from './chatProject';
+import { createCanvasMethods, type CanvasMethods } from './canvas';
+export type {
+  CreateCanvasDocumentInput,
+  UpdateCanvasDocumentInput,
+  CreateCanvasCandidateInput,
+} from './canvas';
+export { CanvasNotFoundError, CanvasCandidateNotFoundError, CanvasConflictError } from './canvas';
+import { createCanvasBoardMethods, type CanvasBoardMethods } from './canvasBoard';
+export type {
+  CreateCanvasBoardInput,
+  UpdateCanvasBoardInput,
+  CreateCanvasBoardCandidateInput,
+} from './canvasBoard';
+export {
+  CanvasBoardNotFoundError,
+  CanvasBoardCandidateNotFoundError,
+  CanvasBoardConflictError,
+} from './canvasBoard';
 /* Tier 3 — Complex (heavier injection) */
 import {
   createTxMethods,
@@ -313,6 +331,8 @@ export type AllMethods = SubagentContentMethods &
   MessageMethods &
   ConversationMethods &
   ChatProjectMethods &
+  CanvasMethods &
+  CanvasBoardMethods &
   TxMethods &
   TransactionMethods &
   SpendTokensMethods &
@@ -562,6 +582,8 @@ export function createMethods(
     ...messageMethods,
     ...conversationMethods,
     ...createChatProjectMethods(mongoose),
+    ...createCanvasMethods(mongoose),
+    ...createCanvasBoardMethods(mongoose),
     /* Tier 3 */
     ...txMethods,
     ...transactionMethods,
@@ -646,6 +668,8 @@ export type {
   ConversationMethods,
   AgentEventActorReconciliationStorageMetrics,
   ChatProjectMethods,
+  CanvasMethods,
+  CanvasBoardMethods,
   TxMethods,
   TransactionMethods,
   SpendTokensMethods,

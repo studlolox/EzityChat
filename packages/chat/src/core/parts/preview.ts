@@ -1,7 +1,7 @@
 import { FileSources } from 'librechat-data-provider';
 import type { TFile } from 'librechat-data-provider';
 
-type PreviewKind = 'pdf' | 'text' | false;
+type PreviewKind = 'pdf' | 'docx' | 'xlsx' | 'text' | false;
 
 const TEXT_EXTENSIONS = new Set([
   'txt',
@@ -58,6 +58,12 @@ function getPreviewKindByMime(mime?: string): PreviewKind {
   if (mime.includes('pdf')) {
     return 'pdf';
   }
+  if (mime.includes('wordprocessingml.document') || mime.includes('application/msword')) {
+    return 'docx';
+  }
+  if (mime.includes('spreadsheetml.sheet') || mime.includes('application/vnd.ms-excel')) {
+    return 'xlsx';
+  }
   if (
     mime.startsWith('text/') ||
     mime.includes('json') ||
@@ -76,6 +82,12 @@ function getPreviewKindByExtension(filename: string): PreviewKind {
   const extension = getFileExtension(filename);
   if (extension === 'pdf') {
     return 'pdf';
+  }
+  if (extension === 'docx') {
+    return 'docx';
+  }
+  if (extension === 'xlsx') {
+    return 'xlsx';
   }
   return TEXT_EXTENSIONS.has(extension) ? 'text' : false;
 }
