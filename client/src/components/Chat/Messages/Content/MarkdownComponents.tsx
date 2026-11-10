@@ -12,6 +12,7 @@ import Mermaid, { MermaidErrorBoundary } from '~/components/Messages/Content/Mer
 import { useMessagePartsHost } from '~/Providers/MessagePartsHostContext';
 import { useCodeBlockContext, useMediaContext } from '~/Providers';
 import CodeBlock from '~/components/Messages/Content/CodeBlock';
+import { CitationPill, extractDomain } from '~/components/Web';
 import useHasAccess from '~/hooks/Roles/useHasAccess';
 import { useFileDownload } from '~/data-provider';
 import { useLocalize } from '~/hooks';
@@ -141,6 +142,32 @@ export const a: React.ElementType = memo(function MarkdownAnchor({ href, childre
   const props: { target?: string; onClick?: React.MouseEventHandler } = { target: '_blank' };
 
   if (!file_id || !filename) {
+    if (href && /^https?:\/\//i.test(href)) {
+      let text = '';
+      if (typeof children === 'string') {
+        text = children.trim();
+      } else if (Array.isArray(children) && typeof children[0] === 'string') {
+        text = (children[0] as string).trim();
+      }
+
+      const isCitationPattern = /^(\^?\d+|source|citation|cite|reference)$/i.test(
+        text.replace(/^\[|\]$/g, ''),
+      );
+      if (isCitationPattern) {
+        return (
+          <CitationPill
+            sources={[
+              {
+                url: href,
+                title: text,
+                domain: extractDomain(href),
+              },
+            ]}
+          />
+        );
+      }
+    }
+
     return (
       <a href={href} {...props}>
         {children}

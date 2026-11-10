@@ -53,6 +53,21 @@ jest.mock('@librechat/client', () => ({
       {children}
     </button>
   ),
+  OGDialog: ({ children, open }: { children: React.ReactNode; open?: boolean }) => (
+    <div data-testid="og-dialog">{open ? children : null}</div>
+  ),
+  OGDialogContent: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+    <div {...props}>{children}</div>
+  ),
+  OGDialogHeader: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+    <div {...props}>{children}</div>
+  ),
+  OGDialogTitle: ({ children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => (
+    <h2 {...props}>{children}</h2>
+  ),
+  OGDialogDescription: ({ children, ...props }: React.HTMLAttributes<HTMLParagraphElement>) => (
+    <p {...props}>{children}</p>
+  ),
 }));
 
 function renderWithProviders(
@@ -123,10 +138,14 @@ describe('Citation', () => {
       searchResults as any,
     );
 
-    const fileButton = screen.getByRole('button', { name: 'Tutorial Imazing.pdf' });
+    const pill = screen.getByTestId('citation-pill');
+    expect(pill).toBeInTheDocument();
+    fireEvent.click(pill);
+
+    const fileButton = screen.getByRole('button', { name: /Tutorial Imazing\.pdf/i });
 
     expect(fileButton).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Tutorial Imazing.pdf' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Tutorial Imazing\.pdf/i })).not.toBeInTheDocument();
 
     fireEvent.click(fileButton);
 
@@ -171,11 +190,18 @@ describe('Citation', () => {
         searchResults,
       );
 
-      expect(screen.getByRole('link', { name: title })).toHaveAttribute('href', link);
+      const pill = screen.getByTestId('citation-pill');
+      expect(pill).toBeInTheDocument();
+      fireEvent.click(pill);
+
+      expect(screen.getByRole('link', { name: new RegExp(title, 'i') })).toHaveAttribute(
+        'href',
+        link,
+      );
     },
   );
 
-  it('keeps standalone web citations as links', () => {
+  it('keeps standalone web citations as links in sources sheet', () => {
     const searchResults = {
       '0': {
         organic: [
@@ -203,7 +229,11 @@ describe('Citation', () => {
       searchResults as any,
     );
 
-    expect(screen.getByRole('link', { name: 'example.com' })).toHaveAttribute(
+    const pill = screen.getByTestId('citation-pill');
+    expect(pill).toBeInTheDocument();
+    fireEvent.click(pill);
+
+    expect(screen.getByRole('link', { name: /Example/i })).toHaveAttribute(
       'href',
       'https://example.com',
     );

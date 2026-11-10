@@ -657,6 +657,44 @@ describe('loadAgent', () => {
       expect(result?.tools).toContain('calculator');
     });
 
+    test('attaches web_search natively when configured in modelSpec.preset.tools', async () => {
+      const result = await loadAgent(
+        {
+          req: {
+            user: { id: 'user123' },
+            body: {},
+            config: {
+              config: {},
+              fileStrategy: FileSources.local,
+              imageOutputType: 'png',
+              modelSpecs: {
+                list: [
+                  {
+                    name: 'ezity-default',
+                    label: 'Ezity AI',
+                    preset: {
+                      endpoint: 'Ezity Gateway',
+                      model: 'ezity-ai',
+                      tools: ['web_search', 'generate_image', 'calculator'],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+          spec: 'ezity-default',
+          agent_id: EPHEMERAL_AGENT_ID as string,
+          endpoint: 'Ezity Gateway',
+          model_parameters: { model: 'ezity-ai' } as unknown as AgentModelParameters,
+        },
+        deps,
+      );
+
+      expect(result?.tools).toContain('web_search');
+      expect(result?.tools).toContain('generate_image');
+      expect(result?.tools).toContain('calculator');
+    });
+
     test('attaches edit_image alongside generate_image when configured in modelSpec.preset.tools', async () => {
       const result = await loadAgent(
         {

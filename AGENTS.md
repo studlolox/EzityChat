@@ -54,7 +54,17 @@ frontend entry point. Keep fixes small and test the missed behavior. Report the 
 ran locally, CI state, the review result at that head, any finding you rejected with the reasoning,
 and checks you could not run.
 
-## Verification
+## Verification and post-coding lint check
+
+Always run linter, formatter, and type checks immediately after modifying or generating code,
+before declaring completion or staging git commits. Husky pre-commit hooks enforce zero warnings
+and fail fast if unlinted code is committed. Execute the following sequence on touched files:
+
+1. **Sort imports**: `node scripts/sort-imports.mts <touched-paths>` (never run bare without paths, which rewrites all roots).
+2. **Format**: `npx prettier --write <touched-paths>`.
+3. **Build shared client primitives**: `npm run --silent build:client-package` whenever client components or styles are touched, ensuring design variant metadata is current.
+4. **Lint and design rules**: `npx eslint --fix --config eslint.config.mjs --no-warn-ignored --max-warnings=0 --pass-on-unpruned-suppressions <touched-paths>`. Resolve any remaining violations (e.g., `shadcn/no-restyle`, `shadcn/no-arbitrary-values`, `no-nested-ternary`).
+5. **Typecheck & static checks**: Run `npx tsc --noEmit` in each workspace touched (e.g. `client` or `packages/api`) or `node scripts/static-checks.mts --only eslint`.
 
 For startup, auth, config, file, or message-loading changes, avoid serial database
 reads and reuse loaded request data. Run `npm run lighthouse` before completion:
@@ -64,7 +74,6 @@ See [budgets, reproduction and failure diagnosis](e2e/lighthouse/README.md).
 A green build is not a typecheck: `packages/api`, `packages/client`, `packages/chat` and `packages/data-schemas` build
 with `tsdown`, which emits without checking types. Run `npx tsc --noEmit` in the workspace you
 changed. `packages/client` excludes `*.spec.ts(x)` and `*.test.ts(x)` from typechecking entirely.
-`npm run sort-imports` with no arguments rewrites every source root — pass the paths you touched.
 Run `npm run static-checks -- --against origin/dev` to reproduce the PR's static checks; use
 `npm run static-checks:full` for the slower gates. Fix all formatting, lint, and TypeScript
 warnings/errors in the code you change. The pre-push hook runs the same checks, slow tier and

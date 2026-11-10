@@ -21,6 +21,15 @@ describe('web search context', () => {
     expect(context).toContain('current, real-time, or otherwise beyond your own knowledge');
   });
 
+  it('instructs the model to use standard markdown citations', () => {
+    const context = buildWebSearchContext();
+
+    expect(context).toContain('[1](url)');
+    expect(context).toContain('Guidelines:');
+    expect(context).toContain('never invent URLs');
+    expect(context).not.toContain('UNICODE ESCAPE SEQUENCES ONLY');
+  });
+
   it('builds dynamic context from the supplied conversation anchor', () => {
     const context = buildWebSearchDynamicContext('2024-01-02T03:04:05.000Z');
     const secondContext = buildWebSearchDynamicContext('2024-01-02T03:04:05.000Z');
