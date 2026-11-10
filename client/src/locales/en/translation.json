@@ -3851,5 +3851,21 @@
   "com_ui_topic_prefix": "Topic: {{topic}}",
   "com_ui_docx_external_blocked": "External media blocked for security: {{images}} image(s), {{links}} link(s).",
   "com_ui_generated_with_comfy": "Generated with ComfyUI",
-  "com_ui_copy_prompt": "Copy prompt"
+  "com_ui_copy_prompt": "Copy prompt",
+  "com_ui_library": "Library",
+  "com_ui_library_search": "Search library...",
+  "com_ui_library_all": "All",
+  "com_ui_library_canvas": "Canvas",
+  "com_ui_library_mindmaps": "Mindmaps",
+  "com_ui_library_images": "Images",
+  "com_ui_library_files": "Files & Docs",
+  "com_ui_library_empty_title": "No items in library",
+  "com_ui_library_empty_desc": "Files you upload, images you generate, and Canvas documents or mindmaps will appear here.",
+  "com_ui_library_grid_view": "Grid view",
+  "com_ui_library_list_view": "List view",
+  "com_ui_library_item_count": "{{count}} item",
+  "com_ui_library_item_count_plural": "{{count}} items",
+  "com_ui_library_from_chat": "From chat",
+  "com_ui_type": "Type",
+  "com_ui_actions": "Actions"
 }

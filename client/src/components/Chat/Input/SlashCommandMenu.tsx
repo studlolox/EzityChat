@@ -18,7 +18,7 @@ export const BUILTIN_SLASH_COMMANDS: SlashCommand[] = [
   },
   {
     name: 'image',
-    description: 'Generate or modify images using local ComfyUI',
+    description: 'Generate or modify images',
     syntax: '/image',
     category: 'creative',
   },

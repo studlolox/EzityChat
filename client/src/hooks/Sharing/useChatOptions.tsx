@@ -216,7 +216,7 @@ export default function useChatOptions({
             onClick: () => setShowRename(true),
             icon: <Pen className={iconClass} aria-hidden="true" />,
             disabled: !canRename,
-            ariaHasPopup: 'dialog',
+            ariaHasPopup: 'dialog' as const,
             ariaControls: 'rename-conversation-dialog',
             /** NOTE: THE FOLLOWING PROPS ARE REQUIRED FOR MENU ITEMS THAT OPEN DIALOGS */
             hideOnClick: false,
@@ -250,7 +250,7 @@ export default function useChatOptions({
             label: localize('com_ui_delete'),
             onClick: () => setShowDelete(true),
             icon: <Trash className={iconClass} aria-hidden="true" />,
-            ariaHasPopup: 'dialog',
+            ariaHasPopup: 'dialog' as const,
             ariaControls: 'delete-conversation-dialog',
             /** NOTE: THE FOLLOWING PROPS ARE REQUIRED FOR MENU ITEMS THAT OPEN DIALOGS */
             hideOnClick: false,
