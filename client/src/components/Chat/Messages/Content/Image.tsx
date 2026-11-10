@@ -1,7 +1,9 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useEffect, useContext, useCallback } from 'react';
 import { Skeleton } from '@librechat/client';
 import { apiBaseUrl } from 'librechat-data-provider';
 import { DialogImage } from '@librechat/chat/components';
+import type { InpaintEditParams } from '@librechat/chat/components';
+import { ChatContext } from '~/Providers/ChatContext';
 import { cn, toAbsoluteFilePath } from '~/utils';
 
 /** Max display height for chat images (Tailwind JIT class) */
@@ -90,6 +92,22 @@ const Image = ({
     }
   }, [absoluteImageUrl, width, height]);
 
+  const chatContext = useContext(ChatContext);
+
+  const handleEditImage = useCallback(
+    async ({ prompt, maskDataUrl }: InpaintEditParams) => {
+      if (!chatContext?.ask) {
+        return;
+      }
+      const instruction = maskDataUrl
+        ? `Inpaint the masked section of this image: "${prompt}".`
+        : `Edit this image: "${prompt}".`;
+      chatContext.ask({ text: instruction });
+      setIsOpen(false);
+    },
+    [chatContext],
+  );
+
   const dims = width && height ? { width, height } : dimensionCache.get(absoluteImageUrl);
   const hasDimensions = !!(dims?.width && dims?.height);
   const heightStyle = hasDimensions ? computeHeightStyle(dims.width, dims.height) : undefined;
@@ -130,6 +148,7 @@ const Image = ({
         downloadImage={downloadImage}
         args={args}
         triggerRef={triggerRef}
+        onEditImage={handleEditImage}
       />
     </div>
   );

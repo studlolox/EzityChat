@@ -146,6 +146,7 @@ export type { DiffLine, ParsedDiff, TextEditPreview } from './components/parts/D
 export { default as Container } from './components/parts/Container';
 export { default as MemoryInfo } from './components/parts/MemoryInfo';
 export { default as DialogImage } from './components/parts/DialogImage';
+export type { InpaintEditParams, MaskStroke, MaskPoint } from './components/parts/DialogImage';
 export { default as PendingSkillCall } from './components/parts/PendingSkillCall';
 export { default as ToolCallLimitNotice } from './components/parts/ToolCallLimitNotice';
 export { default as ResumeAuthorHeader } from './components/parts/ResumeAuthorHeader';

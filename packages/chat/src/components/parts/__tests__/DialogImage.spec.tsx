@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import DialogImage from '../DialogImage';
 
 jest.mock('@librechat/client', () => {
@@ -44,5 +44,68 @@ describe('DialogImage tooltips', () => {
 
     const tooltip = await screen.findByRole('tooltip', undefined, { timeout: 3000 });
     expect(Number(tooltip.style.zIndex)).toBeGreaterThan(LIGHTBOX_Z_INDEX);
+  });
+
+  it('rotates the image 90 degrees when clicking rotate', () => {
+    render(
+      <DialogImage isOpen onOpenChange={jest.fn()} src="/media.png" downloadImage={jest.fn()} />,
+    );
+
+    const rotateBtn = screen.getByRole('button', { name: 'com_ui_rotate_cw' });
+    fireEvent.click(rotateBtn);
+
+    const img = screen.getByAltText('Image');
+    const container = img.parentElement;
+    expect(container?.getAttribute('style')).toContain('rotate(90deg)');
+  });
+
+  it('toggles inpaint studio mode and reveals canvas and studio toolbar', () => {
+    render(
+      <DialogImage isOpen onOpenChange={jest.fn()} src="/media.png" downloadImage={jest.fn()} />,
+    );
+
+    const inpaintToggle = screen.getByRole('button', { name: 'com_ui_inpaint_mode' });
+    fireEvent.click(inpaintToggle);
+
+    expect(screen.getByRole('button', { name: 'com_ui_brush' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'com_ui_eraser' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'com_ui_undo' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'com_ui_clear_mask' })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('com_ui_inpaint_placeholder')).toBeInTheDocument();
+  });
+
+  it('submits conversational edit prompt to onEditImage callback', async () => {
+    const onEditMock = jest.fn();
+    render(
+      <DialogImage
+        isOpen
+        onOpenChange={jest.fn()}
+        src="/media.png"
+        downloadImage={jest.fn()}
+        onEditImage={onEditMock}
+      />,
+    );
+
+    const inpaintToggle = screen.getByRole('button', { name: 'com_ui_inpaint_mode' });
+    act(() => {
+      fireEvent.click(inpaintToggle);
+    });
+
+    const input = screen.getByPlaceholderText('com_ui_inpaint_placeholder');
+    act(() => {
+      fireEvent.change(input, { target: { value: 'make the coat crimson red' } });
+    });
+
+    const submitBtn = screen.getByRole('button', { name: 'com_ui_submit_edit' });
+    await act(async () => {
+      fireEvent.click(submitBtn);
+    });
+
+    expect(onEditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: 'make the coat crimson red',
+        imageSrc: '/media.png',
+      }),
+    );
   });
 });

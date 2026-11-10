@@ -36,6 +36,8 @@ export interface ComfyGenerateParams {
   reference_job_id?: string;
   editMode?: 'generate' | 'edit' | 'inpaint' | 'outpaint' | 'combine';
   edit_mode?: 'generate' | 'edit' | 'inpaint' | 'outpaint' | 'combine';
+  maskImage?: string;
+  mask_image?: string;
   megapixels?: number;
   transparent?: boolean;
   transparent_background?: boolean;
@@ -189,6 +191,10 @@ export class ComfyImageClient {
       const editMode = params.editMode || params.edit_mode;
       if (editMode) {
         submitPayload.edit_mode = editMode;
+      }
+      const mask = params.maskImage || params.mask_image;
+      if (mask) {
+        submitPayload.mask_image = mask;
       }
       if (params.megapixels !== undefined) {
         submitPayload.megapixels = params.megapixels;

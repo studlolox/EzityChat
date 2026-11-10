@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { PanelLeftOpen, PanelLeftClose } from 'lucide';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { X, ArrowDownToLine, RotateCcw } from 'lucide-react';
 import {
   Button,
   MorphIcon,
@@ -10,6 +9,18 @@ import {
   useMediaQuery,
   useRemScale,
 } from '@librechat/client';
+import {
+  X,
+  ArrowDownToLine,
+  RotateCcw,
+  RotateCw,
+  Paintbrush,
+  Eraser,
+  Undo2,
+  Trash2,
+  Sparkles,
+  Loader2,
+} from 'lucide-react';
 
 /** The lightbox is z-250 and not an OGDialog, so its tooltips would keep the default 150 and sit behind it. */
 const TOOLTIP_Z_INDEX = 300;
@@ -26,6 +37,25 @@ const getQualityStyles = (quality: string): string => {
   return 'bg-status-neutral-subtle text-status-neutral';
 };
 
+export interface MaskPoint {
+  x: number;
+  y: number;
+}
+
+export interface MaskStroke {
+  tool: 'brush' | 'eraser';
+  lineWidth: number;
+  points: MaskPoint[];
+}
+
+export interface InpaintEditParams {
+  prompt: string;
+  maskDataUrl?: string;
+  maskBlob?: Blob;
+  imageSrc: string;
+  args?: Record<string, unknown>;
+}
+
 export default function DialogImage({
   isOpen,
   onOpenChange,
@@ -35,6 +65,7 @@ export default function DialogImage({
   triggerRef,
   showDetails = true,
   title,
+  onEditImage,
 }: {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -51,21 +82,36 @@ export default function DialogImage({
   showDetails?: boolean;
   /** Names the dialog and the image for assistive tech, e.g. the file name. */
   title?: string;
+  /** Callback invoked when the user submits an inpaint / image edit. */
+  onEditImage?: (params: InpaintEditParams) => Promise<void> | void;
 }): React.ReactElement | null {
   const localize = useLocalize();
   const [isPromptOpen, setIsPromptOpen] = useState(false);
   const [imageSize, setImageSize] = useState<string | null>(null);
 
-  // Zoom and pan state
+  // Zoom, pan & rotation state
   const [zoom, setZoom] = useState(1);
   const [panX, setPanX] = useState(0);
   const [panY, setPanY] = useState(0);
+  const [rotation, setRotation] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
+  // Inpainting & Visual Studio state
+  const [isMaskingMode, setIsMaskingMode] = useState(false);
+  const [maskTool, setMaskTool] = useState<'brush' | 'eraser'>('brush');
+  const [brushSize, setBrushSize] = useState(32);
+  const [strokes, setStrokes] = useState<MaskStroke[]>([]);
+  const [editPrompt, setEditPrompt] = useState('');
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const isDrawingRef = useRef(false);
+  const currentStrokeRef = useRef<MaskStroke | null>(null);
 
   const getImageSize = useCallback(async (url: string) => {
     const cached = imageSizeCache.get(url);
@@ -73,6 +119,9 @@ export default function DialogImage({
       return cached;
     }
     try {
+      if (typeof fetch === 'undefined') {
+        return null;
+      }
       const response = await fetch(url, { method: 'HEAD' });
       const contentLength = response.headers.get('Content-Length');
 
@@ -110,21 +159,29 @@ export default function DialogImage({
     setPanY(0);
   }, []);
 
+  const resetAllTransforms = useCallback(() => {
+    resetZoom();
+    setRotation(0);
+  }, [resetZoom]);
+
   const getCursorClass = (): string => {
+    if (isMaskingMode) return 'cursor-crosshair';
     if (zoom <= 1) return 'cursor-default';
     return isDragging ? 'cursor-grabbing' : 'cursor-grab';
   };
 
   const handleDoubleClick = useCallback(() => {
+    if (isMaskingMode) return;
     if (zoom > 1) {
       resetZoom();
     } else {
       setZoom(2);
     }
-  }, [zoom, resetZoom]);
+  }, [isMaskingMode, zoom, resetZoom]);
 
   const handleWheel = useCallback(
     (e: React.WheelEvent<HTMLDivElement>) => {
+      if (isMaskingMode) return;
       e.preventDefault();
       if (!containerRef.current) return;
 
@@ -155,58 +212,322 @@ export default function DialogImage({
       setPanX(panX - deltaX);
       setPanY(panY - deltaY);
     },
-    [zoom, panX, panY],
+    [isMaskingMode, zoom, panX, panY],
   );
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
+      if (isMaskingMode || zoom <= 1) return;
       e.preventDefault();
-      if (zoom <= 1) return;
       setIsDragging(true);
       setDragStart({
         x: e.clientX - panX,
         y: e.clientY - panY,
       });
     },
-    [zoom, panX, panY],
+    [isMaskingMode, zoom, panX, panY],
   );
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!isDragging || zoom <= 1) return;
+      if (isMaskingMode || !isDragging || zoom <= 1) return;
       const newPanX = e.clientX - dragStart.x;
       const newPanY = e.clientY - dragStart.y;
       setPanX(newPanX);
       setPanY(newPanY);
     },
-    [isDragging, dragStart, zoom],
+    [isMaskingMode, isDragging, dragStart, zoom],
   );
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
   }, []);
 
-  // Handle click on empty areas to close (only if clicking overlay/content directly, not children)
+  // Stroke rendering function (handles both visual overlay and offscreen binary export)
+  const renderStrokes = useCallback(
+    (
+      canvas: HTMLCanvasElement,
+      strokeList: MaskStroke[],
+      scaleX = 1,
+      scaleY = 1,
+      isOffscreenBinary = false,
+    ) => {
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      if (isOffscreenBinary) {
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      for (const stroke of strokeList) {
+        if (!stroke.points || stroke.points.length === 0) continue;
+        ctx.save();
+        ctx.lineWidth = stroke.lineWidth * Math.max(scaleX, scaleY);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        if (isOffscreenBinary) {
+          if (stroke.tool === 'brush') {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.fillStyle = '#FFFFFF';
+          } else {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.strokeStyle = '#000000';
+            ctx.fillStyle = '#000000';
+          }
+        } else {
+          if (stroke.tool === 'brush') {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.strokeStyle = 'rgba(168, 85, 247, 0.6)';
+            ctx.fillStyle = 'rgba(168, 85, 247, 0.6)';
+          } else {
+            ctx.globalCompositeOperation = 'destination-out';
+          }
+        }
+
+        ctx.beginPath();
+        const firstPt = stroke.points[0];
+        ctx.moveTo(firstPt.x * scaleX, firstPt.y * scaleY);
+
+        if (stroke.points.length === 1) {
+          ctx.arc(
+            firstPt.x * scaleX,
+            firstPt.y * scaleY,
+            (stroke.lineWidth * Math.max(scaleX, scaleY)) / 2,
+            0,
+            Math.PI * 2,
+          );
+          ctx.fill();
+        } else {
+          for (let i = 1; i < stroke.points.length; i++) {
+            const pt = stroke.points[i];
+            ctx.lineTo(pt.x * scaleX, pt.y * scaleY);
+          }
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    },
+    [],
+  );
+
+  // Sync canvas size to displayed image size
+  const syncCanvasDimensions = useCallback(() => {
+    const img = imageRef.current;
+    const canvas = canvasRef.current;
+    if (!img || !canvas) return;
+    if (img.clientWidth > 0 && img.clientHeight > 0) {
+      canvas.width = img.clientWidth;
+      canvas.height = img.clientHeight;
+      renderStrokes(canvas, strokes);
+    }
+  }, [strokes, renderStrokes]);
+
+  useEffect(() => {
+    if (isMaskingMode) {
+      syncCanvasDimensions();
+    }
+  }, [isMaskingMode, syncCanvasDimensions]);
+
+  useEffect(() => {
+    if (canvasRef.current && isMaskingMode) {
+      renderStrokes(canvasRef.current, strokes);
+    }
+  }, [strokes, isMaskingMode, renderStrokes]);
+
+  // Coordinate mapper from pointer position to canvas coordinates
+  const getCanvasCoordinates = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>): MaskPoint | null => {
+      const canvas = canvasRef.current;
+      if (!canvas) return null;
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return null;
+
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      const rawX = (e.clientX - rect.left) * scaleX;
+      const rawY = (e.clientY - rect.top) * scaleY;
+
+      return {
+        x: Math.max(0, Math.min(canvas.width, rawX)),
+        y: Math.max(0, Math.min(canvas.height, rawY)),
+      };
+    },
+    [],
+  );
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+
+      const pt = getCanvasCoordinates(e);
+      if (!pt) return;
+
+      isDrawingRef.current = true;
+      const newStroke: MaskStroke = {
+        tool: maskTool,
+        lineWidth: brushSize,
+        points: [pt],
+      };
+      currentStrokeRef.current = newStroke;
+      setStrokes((prev) => [...prev, newStroke]);
+    },
+    [getCanvasCoordinates, maskTool, brushSize],
+  );
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      if (!isDrawingRef.current || !currentStrokeRef.current) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      const pt = getCanvasCoordinates(e);
+      if (!pt) return;
+
+      currentStrokeRef.current.points.push(pt);
+      setStrokes((prev) => {
+        const next = [...prev];
+        next[next.length - 1] = { ...currentStrokeRef.current! };
+        return next;
+      });
+    },
+    [getCanvasCoordinates],
+  );
+
+  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawingRef.current) return;
+    isDrawingRef.current = false;
+    currentStrokeRef.current = null;
+    try {
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    setStrokes((prev) => prev.slice(0, -1));
+  }, []);
+
+  const handleClear = useCallback(() => {
+    setStrokes([]);
+  }, []);
+
+  // Export binary PNG mask for gateway inpainting
+  const exportBinaryMask = useCallback(async (): Promise<{
+    dataUrl: string;
+    blob: Blob;
+  } | null> => {
+    const img = imageRef.current;
+    const canvas = canvasRef.current;
+    if (!img || !canvas || strokes.length === 0) return null;
+
+    const naturalW = img.naturalWidth || canvas.width;
+    const naturalH = img.naturalHeight || canvas.height;
+
+    const offscreen = document.createElement('canvas');
+    offscreen.width = naturalW;
+    offscreen.height = naturalH;
+
+    const scaleX = naturalW / canvas.width;
+    const scaleY = naturalH / canvas.height;
+
+    renderStrokes(offscreen, strokes, scaleX, scaleY, true);
+
+    const dataUrl = offscreen.toDataURL('image/png');
+    const blob = await new Promise<Blob | null>((resolve) =>
+      offscreen.toBlob(resolve, 'image/png'),
+    );
+    if (!blob) return null;
+
+    return { dataUrl, blob };
+  }, [strokes, renderStrokes]);
+
+  // Submit inpainting / conversational image edit
+  const handleSubmitEdit = useCallback(async () => {
+    const cleanPrompt = editPrompt.trim();
+    if (!cleanPrompt || isSubmittingEdit) return;
+
+    setIsSubmittingEdit(true);
+    setEditError(null);
+
+    try {
+      let maskDataUrl: string | undefined;
+      let maskBlob: Blob | undefined;
+
+      if (strokes.length > 0) {
+        const maskResult = await exportBinaryMask();
+        if (maskResult) {
+          maskDataUrl = maskResult.dataUrl;
+          maskBlob = maskResult.blob;
+        }
+      }
+
+      if (onEditImage) {
+        await onEditImage({
+          prompt: cleanPrompt,
+          maskDataUrl,
+          maskBlob,
+          imageSrc: src,
+          args,
+        });
+      }
+
+      setIsMaskingMode(false);
+      setStrokes([]);
+      setEditPrompt('');
+      onOpenChange(false);
+    } catch (err: unknown) {
+      setEditError(err instanceof Error ? err.message : 'Failed to submit image edit');
+    } finally {
+      setIsSubmittingEdit(false);
+    }
+  }, [
+    editPrompt,
+    isSubmittingEdit,
+    strokes.length,
+    exportBinaryMask,
+    onEditImage,
+    src,
+    args,
+    onOpenChange,
+  ]);
+
+  // Handle click on empty background areas to close
   const handleBackgroundClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      // Only close if clicking directly on overlay/content background
       if (e.target !== e.currentTarget) {
         return;
       }
-      // Don't close if zoomed (user might be panning)
-      if (zoom > 1) {
+      if (isMaskingMode || zoom > 1) {
         return;
       }
       onOpenChange(false);
     },
-    [onOpenChange, zoom],
+    [isMaskingMode, onOpenChange, zoom],
   );
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      setIsMaskingMode(false);
+      setStrokes([]);
+      setEditPrompt('');
+      setEditError(null);
+      resetAllTransforms();
+      return;
+    }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (zoom > 1) {
+        if (isMaskingMode) {
+          setIsMaskingMode(false);
+        } else if (zoom > 1) {
           resetZoom();
         } else {
           onOpenChange(false);
@@ -215,14 +536,14 @@ export default function DialogImage({
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [resetZoom, onOpenChange, isOpen, zoom]);
+  }, [isOpen, isMaskingMode, zoom, resetZoom, resetAllTransforms, onOpenChange]);
 
   useEffect(() => {
     if (isOpen && src) {
       getImageSize(src).then(setImageSize);
-      resetZoom();
+      resetAllTransforms();
     }
-  }, [isOpen, src, getImageSize, resetZoom]);
+  }, [isOpen, src, getImageSize, resetAllTransforms]);
 
   useEffect(() => {
     if (zoom === 1) {
@@ -230,13 +551,6 @@ export default function DialogImage({
       setPanY(0);
     }
   }, [zoom]);
-
-  useEffect(() => {
-    if (zoom === 1) {
-      setPanX(0);
-      setPanY(0);
-    }
-  }, [isPromptOpen, zoom]);
 
   // Lock body scroll when dialog is open
   useEffect(() => {
@@ -254,15 +568,10 @@ export default function DialogImage({
     ? localize('com_ui_hide_image_details')
     : localize('com_ui_show_image_details');
 
-  /* The details panel is 20rem wide, so the viewport it has to fit beside has to be
-     measured in the same units: a fixed 640px breakpoint puts the panel beside the
-     image at scales where 20rem leaves almost nothing for the image and pushes the
-     action controls offscreen. Below it the panel overlays instead, as on mobile. */
   const remScale = useRemScale();
   const detailsFitBesideImage = useMediaQuery(`(min-width: ${640 * remScale}px)`);
-  const detailsBeside = isPromptOpen && detailsFitBesideImage;
+  const detailsBeside = isPromptOpen && detailsFitBesideImage && !isMaskingMode;
 
-  // Reserve the side panel's width (w-80 = 20rem) only when it sits beside the image
   const getImageMaxWidth = () => (detailsBeside ? 'calc(90vw - 20rem)' : '90vw');
 
   return (
@@ -273,7 +582,7 @@ export default function DialogImage({
           onClick={handleBackgroundClick}
         />
         <DialogPrimitive.Content
-          className="fixed inset-0 z-[250] flex items-center justify-center outline-hidden"
+          className="fixed inset-0 z-[250] flex items-center justify-center outline-hidden select-none"
           onOpenAutoFocus={(e) => {
             e.preventDefault();
             closeButtonRef.current?.focus();
@@ -288,6 +597,7 @@ export default function DialogImage({
           {title != null && (
             <DialogPrimitive.Title className="sr-only">{title}</DialogPrimitive.Title>
           )}
+
           {/* Close button - top left */}
           <div className="absolute inset-s-4 top-4 z-20">
             <TooltipAnchor
@@ -308,17 +618,180 @@ export default function DialogImage({
             />
           </div>
 
-          {/* Action buttons - top right (21rem = 20rem panel + 1rem gap) */}
+          {/* Inpaint Studio Floating Toolbar (Centered Top) */}
+          {isMaskingMode && (
+            <div
+              className="bg-surface-primary/95 border-border-medium absolute inset-x-0 top-4 z-30 mx-auto flex w-fit items-center justify-center gap-2 rounded-2xl border px-4 py-2 shadow-2xl backdrop-blur-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Brush Button */}
+              <TooltipAnchor
+                zIndex={TOOLTIP_Z_INDEX}
+                description={localize('com_ui_brush')}
+                render={
+                  <Button
+                    onClick={() => setMaskTool('brush')}
+                    variant={maskTool === 'brush' ? 'default' : 'ghost'}
+                    size="bare"
+                    className="h-9 w-9"
+                    aria-label={localize('com_ui_brush')}
+                  >
+                    <Paintbrush className="size-4" aria-hidden="true" />
+                  </Button>
+                }
+              />
+
+              {/* Eraser Button */}
+              <TooltipAnchor
+                zIndex={TOOLTIP_Z_INDEX}
+                description={localize('com_ui_eraser')}
+                render={
+                  <Button
+                    onClick={() => setMaskTool('eraser')}
+                    variant={maskTool === 'eraser' ? 'default' : 'ghost'}
+                    size="bare"
+                    className="h-9 w-9"
+                    aria-label={localize('com_ui_eraser')}
+                  >
+                    <Eraser className="size-4" aria-hidden="true" />
+                  </Button>
+                }
+              />
+
+              <div className="bg-border-medium mx-1 h-5 w-px" />
+
+              {/* Brush Size Slider */}
+              <div className="flex items-center gap-2 px-1">
+                <input
+                  type="range"
+                  min="8"
+                  max="96"
+                  step="4"
+                  value={brushSize}
+                  onChange={(e) => setBrushSize(Number(e.target.value))}
+                  className="accent-surface-submit w-20 cursor-pointer"
+                  aria-label={localize('com_ui_brush_size')}
+                />
+                <span className="text-text-secondary w-7 text-right font-mono text-xs">
+                  {brushSize}
+                </span>
+              </div>
+
+              <div className="bg-border-medium mx-1 h-5 w-px" />
+
+              {/* Undo Button */}
+              <TooltipAnchor
+                zIndex={TOOLTIP_Z_INDEX}
+                description={localize('com_ui_undo')}
+                render={
+                  <Button
+                    onClick={handleUndo}
+                    disabled={strokes.length === 0}
+                    variant="ghost"
+                    size="bare"
+                    className="h-9 w-9"
+                    aria-label={localize('com_ui_undo')}
+                  >
+                    <Undo2 className="size-4" aria-hidden="true" />
+                  </Button>
+                }
+              />
+
+              {/* Clear Mask Button */}
+              <TooltipAnchor
+                zIndex={TOOLTIP_Z_INDEX}
+                description={localize('com_ui_clear_mask')}
+                render={
+                  <Button
+                    onClick={handleClear}
+                    disabled={strokes.length === 0}
+                    variant="destructive-soft"
+                    size="bare"
+                    className="h-9 w-9"
+                    aria-label={localize('com_ui_clear_mask')}
+                  >
+                    <Trash2 className="size-4" aria-hidden="true" />
+                  </Button>
+                }
+              />
+
+              <div className="bg-border-medium mx-1 h-5 w-px" />
+
+              {/* Exit Masking Mode */}
+              <TooltipAnchor
+                zIndex={TOOLTIP_Z_INDEX}
+                description={localize('com_ui_close')}
+                render={
+                  <Button
+                    onClick={() => setIsMaskingMode(false)}
+                    variant="ghost"
+                    size="bare"
+                    className="h-9 w-9"
+                    aria-label={localize('com_ui_close')}
+                  >
+                    <X className="size-4" aria-hidden="true" />
+                  </Button>
+                }
+              />
+            </div>
+          )}
+
+          {/* Action buttons - top right */}
           <div
-            className={`absolute top-4 z-20 flex items-center gap-2 transition-all duration-300 ${detailsBeside ? 'inset-e-[21rem]' : 'inset-e-4'}`}
+            className={`absolute top-4 z-20 flex items-center gap-2 transition-all duration-300 ${
+              detailsBeside ? 'inset-e-[21rem]' : 'inset-e-4'
+            }`}
           >
-            {zoom > 1 && (
+            {/* Inpaint Mode Toggle */}
+            <TooltipAnchor
+              zIndex={TOOLTIP_Z_INDEX}
+              description={localize('com_ui_inpaint_mode')}
+              render={
+                <Button
+                  onClick={() => {
+                    setIsMaskingMode((prev) => !prev);
+                    if (!isMaskingMode) {
+                      resetZoom();
+                      setIsPromptOpen(false);
+                    }
+                  }}
+                  variant={isMaskingMode ? 'default' : 'media'}
+                  size="bare"
+                  className="h-10 w-10"
+                  aria-label={localize('com_ui_inpaint_mode')}
+                >
+                  <Paintbrush className="size-5" aria-hidden="true" />
+                </Button>
+              }
+            />
+
+            {/* Rotate Clockwise */}
+            {!isMaskingMode && (
+              <TooltipAnchor
+                zIndex={TOOLTIP_Z_INDEX}
+                description={localize('com_ui_rotate_cw')}
+                render={
+                  <Button
+                    onClick={() => setRotation((prev) => (prev + 90) % 360)}
+                    variant="media"
+                    size="bare"
+                    className="h-10 w-10"
+                    aria-label={localize('com_ui_rotate_cw')}
+                  >
+                    <RotateCw className="size-5" aria-hidden="true" />
+                  </Button>
+                }
+              />
+            )}
+
+            {/* Reset Zoom */}
+            {(zoom > 1 || rotation !== 0) && !isMaskingMode && (
               <TooltipAnchor
                 zIndex={TOOLTIP_Z_INDEX}
                 description={localize('com_ui_reset_zoom')}
                 render={
                   <Button
-                    onClick={resetZoom}
+                    onClick={resetAllTransforms}
                     variant="media"
                     size="bare"
                     className="h-10 w-10"
@@ -329,6 +802,8 @@ export default function DialogImage({
                 }
               />
             )}
+
+            {/* Download */}
             <TooltipAnchor
               zIndex={TOOLTIP_Z_INDEX}
               description={localize('com_ui_download')}
@@ -344,7 +819,9 @@ export default function DialogImage({
                 </Button>
               }
             />
-            {showDetails && (
+
+            {/* Prompt Details */}
+            {showDetails && !isMaskingMode && (
               <TooltipAnchor
                 zIndex={TOOLTIP_Z_INDEX}
                 description={imageDetailsLabel}
@@ -366,7 +843,7 @@ export default function DialogImage({
             )}
           </div>
 
-          {/* Image container - centered */}
+          {/* Image Stage Container */}
           <div
             className={`transition-all duration-300 ${detailsBeside ? 'me-80' : ''}`}
             onClick={(e) => e.stopPropagation()}
@@ -382,9 +859,9 @@ export default function DialogImage({
               onDoubleClick={handleDoubleClick}
             >
               <div
-                className="transition-transform duration-100 ease-out"
+                className="relative inline-block transition-transform duration-100 ease-out"
                 style={{
-                  transform: `translate(${panX}px, ${panY}px) scale(${zoom})`,
+                  transform: `translate(${panX}px, ${panY}px) scale(${zoom}) rotate(${rotation}deg)`,
                   transformOrigin: 'center center',
                 }}
               >
@@ -393,18 +870,73 @@ export default function DialogImage({
                   src={src}
                   alt={title ?? 'Image'}
                   decoding="async"
-                  className="block max-h-[85vh] object-contain"
+                  onLoad={syncCanvasDimensions}
+                  className="block max-h-[85vh] rounded-md object-contain"
                   style={{
                     maxWidth: getImageMaxWidth(),
                   }}
                   draggable={false}
                 />
+
+                {/* Overlaid Inpainting Canvas */}
+                {isMaskingMode && (
+                  <canvas
+                    ref={canvasRef}
+                    className="absolute inset-0 z-10 size-full cursor-crosshair touch-none rounded-md"
+                    onPointerDown={handlePointerDown}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={handlePointerUp}
+                    onPointerCancel={handlePointerUp}
+                  />
+                )}
               </div>
             </div>
           </div>
 
-          {/* Side Panel */}
-          {showDetails && (
+          {/* Conversational Edit Prompt Bar (Bottom) */}
+          {isMaskingMode && (
+            <div
+              className="bg-surface-primary/95 border-border-medium absolute inset-x-4 bottom-6 z-40 mx-auto flex max-w-xl flex-col gap-2 rounded-2xl border p-2 shadow-2xl backdrop-blur-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {editError && (
+                <div className="text-status-error px-2 py-0.5 text-xs font-medium">{editError}</div>
+              )}
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={editPrompt}
+                  onChange={(e) => setEditPrompt(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmitEdit();
+                    }
+                  }}
+                  placeholder={localize('com_ui_inpaint_placeholder')}
+                  className="bg-surface-tertiary text-text-primary placeholder:text-text-secondary border-border-light focus:ring-border-heavy flex-1 rounded-xl border px-3.5 py-2.5 text-sm outline-hidden transition-all focus:ring-2"
+                  disabled={isSubmittingEdit}
+                />
+                <Button
+                  onClick={handleSubmitEdit}
+                  disabled={!editPrompt.trim() || isSubmittingEdit}
+                  variant="submit"
+                  size="sm"
+                  aria-label={localize('com_ui_submit_edit')}
+                >
+                  {isSubmittingEdit ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="size-4" />
+                  )}
+                  <span>{localize('com_ui_submit_edit')}</span>
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Side Panel for Generation Details */}
+          {showDetails && !isMaskingMode && (
             <div
               data-side-panel
               className={`bg-surface-primary border-text-on-media/10 fixed inset-e-0 top-0 z-30 h-full w-80 max-w-full transform border-s shadow-2xl transition-transform duration-300 ${
@@ -461,9 +993,11 @@ export default function DialogImage({
                           {localize('com_ui_quality')}:
                         </span>
                         <span
-                          className={`rounded px-2 py-1 text-xs font-medium capitalize ${getQualityStyles(args?.quality || '')}`}
+                          className={`rounded px-2 py-1 text-xs font-medium capitalize ${getQualityStyles(
+                            (args?.quality as string) || '',
+                          )}`}
                         >
-                          {args?.quality || 'Standard'}
+                          {(args?.quality as string) || 'Standard'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
