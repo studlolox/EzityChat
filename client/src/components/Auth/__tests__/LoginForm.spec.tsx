@@ -123,7 +123,7 @@ test('renders login form', () => {
   expect(getByLabelText(/password/i)).toBeInTheDocument();
 });
 
-test('submits login form', async () => {
+test('submits login form with default remember me', async () => {
   const { getByLabelText } = render(
     <Login
       onSubmit={mockLogin}
@@ -140,7 +140,37 @@ test('submits login form', async () => {
   await userEvent.type(passwordInput, 'password');
   await userEvent.click(submitButton);
 
-  expect(mockLogin).toHaveBeenCalledWith({ email: 'test@example.com', password: 'password' });
+  expect(mockLogin).toHaveBeenCalledWith({
+    email: 'test@example.com',
+    password: 'password',
+    remember: true,
+  });
+});
+
+test('submits login form when remember me is unchecked', async () => {
+  const { getByLabelText, getByRole } = render(
+    <Login
+      onSubmit={mockLogin}
+      startupConfig={mockStartupConfig}
+      error={undefined}
+      setError={jest.fn()}
+    />,
+  );
+  const emailInput = getByLabelText(/email/i);
+  const passwordInput = getByLabelText(/password/i);
+  const rememberCheckbox = getByRole('checkbox');
+  const submitButton = getByTestId(document.body, 'login-button');
+
+  await userEvent.type(emailInput, 'test@example.com');
+  await userEvent.type(passwordInput, 'password');
+  await userEvent.click(rememberCheckbox);
+  await userEvent.click(submitButton);
+
+  expect(mockLogin).toHaveBeenCalledWith({
+    email: 'test@example.com',
+    password: 'password',
+    remember: false,
+  });
 });
 
 test('displays validation error messages', async () => {

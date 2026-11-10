@@ -403,8 +403,11 @@ function generateDatedTwoFactorToken(
   jwtSecret: string,
   purpose: string,
   expiresIn: jwt.SignOptions['expiresIn'],
+  extraClaims?: Record<string, unknown>,
 ): string {
-  return jwt.sign({ userId, purpose, issuedAtMs: Date.now() }, jwtSecret, { expiresIn });
+  return jwt.sign({ userId, purpose, issuedAtMs: Date.now(), ...(extraClaims ?? {}) }, jwtSecret, {
+    expiresIn,
+  });
 }
 
 export function generateTwoFactorSetupToken(userId: string, jwtSecret: string): string {
@@ -416,12 +419,17 @@ export function generateTwoFactorSetupToken(userId: string, jwtSecret: string): 
   );
 }
 
-export function generateTwoFactorLoginChallengeToken(userId: string, jwtSecret: string): string {
+export function generateTwoFactorLoginChallengeToken(
+  userId: string,
+  jwtSecret: string,
+  remember?: boolean,
+): string {
   return generateDatedTwoFactorToken(
     userId,
     jwtSecret,
     TWO_FACTOR_TOKEN_PURPOSE.LOGIN_CHALLENGE,
     TWO_FACTOR_LOGIN_CHALLENGE_TOKEN_EXPIRY,
+    remember !== undefined ? { remember } : undefined,
   );
 }
 
@@ -457,8 +465,24 @@ function verifyDatedTwoFactorToken(
 export function verifyTwoFactorLoginChallengeToken(
   tempToken: string | undefined,
   jwtSecret: string | undefined,
-): TwoFactorTokenCredential | undefined {
-  return verifyDatedTwoFactorToken(tempToken, jwtSecret, TWO_FACTOR_TOKEN_PURPOSE.LOGIN_CHALLENGE);
+): (TwoFactorTokenCredential & { remember?: boolean }) | undefined {
+  const credential = verifyDatedTwoFactorToken(
+    tempToken,
+    jwtSecret,
+    TWO_FACTOR_TOKEN_PURPOSE.LOGIN_CHALLENGE,
+  );
+  if (!credential) {
+    return undefined;
+  }
+  try {
+    const payload = jwt.decode(tempToken!) as { remember?: boolean } | null;
+    return {
+      ...credential,
+      remember: typeof payload?.remember === 'boolean' ? payload.remember : undefined,
+    };
+  } catch {
+    return credential;
+  }
 }
 
 export function generateTwoFactorSetupFinalizationToken(

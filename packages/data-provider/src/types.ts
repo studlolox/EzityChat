@@ -795,6 +795,7 @@ export type TRegisterUser = {
 export type TLoginUser = {
   email: string;
   password: string;
+  remember?: boolean;
   token?: string;
   backupCode?: string;
 };
@@ -812,6 +813,7 @@ export type TLoginResponse = {
 export type TOTPVerificationPayload = {
   token?: string;
   backupCode?: string;
+  remember?: boolean;
 };
 
 export type TEnable2FARequest = TOTPVerificationPayload;

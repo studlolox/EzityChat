@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { Turnstile } from '@marsidev/react-turnstile';
 import {
   ThemeContext,
@@ -7,6 +7,7 @@ import {
   Spinner,
   Button,
   Input,
+  Checkbox,
   isDark,
   floatingLabel,
 } from '@librechat/client';
@@ -30,8 +31,13 @@ const LoginForm: React.FC<TLoginFormProps> = ({ onSubmit, startupConfig, error, 
     register,
     getValues,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
-  } = useForm<TLoginUser>();
+  } = useForm<TLoginUser>({
+    defaultValues: {
+      remember: true,
+    },
+  });
   const [showResendLink, setShowResendLink] = useState<boolean>(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
@@ -150,14 +156,37 @@ const LoginForm: React.FC<TLoginFormProps> = ({ onSubmit, startupConfig, error, 
           </div>
           {renderError('password')}
         </div>
-        {startupConfig.passwordResetEnabled && (
-          <a
-            href="/forgot-password"
-            className="text-accent-primary hover:text-accent-primary-hover hover:decoration-accent-primary-hover focus:text-accent-primary-hover focus:decoration-accent-primary-hover inline-flex p-1 text-sm font-medium underline decoration-transparent transition-all duration-200"
-          >
-            {localize('com_auth_password_forgot')}
-          </a>
-        )}
+        <div className="mt-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Controller
+              name="remember"
+              control={control}
+              render={({ field }) => (
+                <Checkbox
+                  id="remember"
+                  checked={field.value ?? false}
+                  onCheckedChange={field.onChange}
+                  aria-labelledby="remember-me-label"
+                />
+              )}
+            />
+            <label
+              id="remember-me-label"
+              htmlFor="remember"
+              className="text-text-secondary cursor-pointer text-sm font-medium select-none"
+            >
+              {localize('com_auth_remember_me')}
+            </label>
+          </div>
+          {startupConfig.passwordResetEnabled && (
+            <a
+              href="/forgot-password"
+              className="text-accent-primary hover:text-accent-primary-hover hover:decoration-accent-primary-hover focus:text-accent-primary-hover focus:decoration-accent-primary-hover inline-flex p-1 text-sm font-medium underline decoration-transparent transition-all duration-200"
+            >
+              {localize('com_auth_password_forgot')}
+            </a>
+          )}
+        </div>
 
         {requireCaptcha && (
           <div className="my-4 flex justify-center">

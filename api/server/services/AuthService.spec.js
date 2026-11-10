@@ -1899,6 +1899,17 @@ describe('CloudFront cookie integration', () => {
       });
     });
 
+    it('sets 30 days expiration when remember is true in request body', async () => {
+      const res = mockResponse();
+      const req = { ...mockRequest(), body: { remember: true } };
+
+      await setAuthTokens('user-123', res, null, req);
+
+      expect(createSession).toHaveBeenCalledWith('user-123', {
+        expiresIn: 1000 * 60 * 60 * 24 * 30,
+      });
+    });
+
     it('succeeds even when setCloudFrontCookies returns false', async () => {
       setCloudFrontCookies.mockReturnValue(false);
 

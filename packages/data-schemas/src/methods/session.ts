@@ -15,6 +15,8 @@ export class SessionError extends Error {
 
 /** Default refresh token expiry: 7 days in milliseconds */
 export const DEFAULT_REFRESH_TOKEN_EXPIRY: number = 1000 * 60 * 60 * 24 * 7;
+/** Default remember-me refresh token expiry: 30 days in milliseconds */
+export const DEFAULT_REMEMBER_ME_EXPIRY: number = 1000 * 60 * 60 * 24 * 30;
 
 // Factory function that takes mongoose instance and returns the methods
 export function createSessionMethods(mongoose: typeof import('mongoose')): {

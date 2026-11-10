@@ -21,6 +21,7 @@ export {
   CanvasBoardCandidateNotFoundError,
   CanvasBoardConflictError,
   DEFAULT_REFRESH_TOKEN_EXPIRY,
+  DEFAULT_REMEMBER_ME_EXPIRY,
   DEFAULT_SESSION_EXPIRY,
   tokenValues,
   cacheTokenValues,

@@ -177,10 +177,11 @@ const getTOTPSecret = async (storedSecret) => {
 /**
  * Generates a temporary JWT token for 2FA verification that expires in 5 minutes.
  * @param {string} userId
+ * @param {boolean} [remember]
  * @returns {string}
  */
-const generate2FATempToken = (userId) => {
-  return generateTwoFactorLoginChallengeToken(userId, process.env.JWT_SECRET);
+const generate2FATempToken = (userId, remember) => {
+  return generateTwoFactorLoginChallengeToken(userId, process.env.JWT_SECRET, remember);
 };
 
 module.exports = {

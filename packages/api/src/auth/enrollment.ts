@@ -28,7 +28,12 @@ import { getAuthorizingCredential } from './gates';
 import { sanitizeUserForResponse } from './user';
 import { clearCloudFrontCookies } from '~/cdn';
 
-type LoginChallengeBody = { tempToken?: string; token?: string; backupCode?: string };
+type LoginChallengeBody = {
+  tempToken?: string;
+  token?: string;
+  backupCode?: string;
+  remember?: boolean;
+};
 type SetupBody = { token?: string };
 type ChallengeRequest = Request<Record<string, string>, object, LoginChallengeBody>;
 type SetupRequest = Request<Record<string, string>, object, SetupBody> & {
@@ -192,6 +197,9 @@ export function createEnrollmentControllers(
       }
 
       const userData = sanitizeUser(user);
+      if (credential.remember !== undefined) {
+        req.body.remember = credential.remember;
+      }
       const authToken = await deps.setAuthTokens(user._id, res, null, req);
       const retirement = await recheckMintedCredential(
         () => deps.getUserById(credential.userId, TOKEN_RETIREMENT_FIELDS),

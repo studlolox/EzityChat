@@ -38,7 +38,12 @@ import {
   createRefreshTokenBridgeMethods,
   type RefreshTokenBridgeMethods,
 } from './refreshTokenBridge';
-import { createSessionMethods, DEFAULT_REFRESH_TOKEN_EXPIRY, type SessionMethods } from './session';
+import {
+  createSessionMethods,
+  DEFAULT_REFRESH_TOKEN_EXPIRY,
+  DEFAULT_REMEMBER_ME_EXPIRY,
+  type SessionMethods,
+} from './session';
 import { createPasskeyMethods, type PasskeyMethods } from './passkey';
 import { createUserMethods, DEFAULT_SESSION_EXPIRY, type UserMethods } from './user';
 import { createTokenMethods, type TokenMethods } from './token';
@@ -252,6 +257,7 @@ export {
   MCPAuthorityProofError,
   MAX_MCP_AUTHORITY_TARGETS,
   DEFAULT_REFRESH_TOKEN_EXPIRY,
+  DEFAULT_REMEMBER_ME_EXPIRY,
   DEFAULT_SESSION_EXPIRY,
   createMCPAuthorityBootRevision,
   createMCPAuthorityConfigSourceRevision,

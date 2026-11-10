@@ -5,6 +5,7 @@ const {
   getTenantId,
   DEFAULT_SESSION_EXPIRY,
   DEFAULT_REFRESH_TOKEN_EXPIRY,
+  DEFAULT_REMEMBER_ME_EXPIRY,
 } = require('@librechat/data-schemas');
 const {
   ErrorTypes,
@@ -680,7 +681,14 @@ const setAuthTokens = async (userId, res, _session = null, req = null) => {
     let session = _session;
     let refreshToken;
     let refreshTokenExpires;
-    const expiresIn = math(process.env.REFRESH_TOKEN_EXPIRY, DEFAULT_REFRESH_TOKEN_EXPIRY);
+    const defaultExpiry = math(process.env.REFRESH_TOKEN_EXPIRY, DEFAULT_REFRESH_TOKEN_EXPIRY);
+    const defaultRememberExpiry = 1000 * 60 * 60 * 24 * 30; // 30 days
+    const rememberMeExpiry = math(
+      process.env.REMEMBER_ME_EXPIRY,
+      DEFAULT_REMEMBER_ME_EXPIRY || defaultRememberExpiry,
+    );
+    const isRemember = req?.body?.remember === true || req?.body?.remember === 'true';
+    const expiresIn = isRemember ? rememberMeExpiry : defaultExpiry;
 
     if (session && session._id && session.expiration != null) {
       refreshTokenExpires = session.expiration.getTime();
