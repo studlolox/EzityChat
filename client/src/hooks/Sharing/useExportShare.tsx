@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
+import { useSetAtom } from 'jotai';
 import { useRecoilValue } from 'recoil';
-import { Upload, Share2, Folder } from 'lucide-react';
+import { Upload, Share2, Folder, PanelRightOpen } from 'lucide-react';
 import { PermissionTypes, Permissions } from 'librechat-data-provider';
 import { useGetSharedLinkQuery } from 'librechat-data-provider/react-query';
 import type { ReactNode } from 'react';
@@ -8,6 +9,7 @@ import type * as t from '~/common';
 import ExportModal from '~/components/Nav/ExportConversation/ExportModal';
 import { ShareButton } from '~/components/Conversations/ConvoOptions';
 import ChatFilesDrawer from '~/components/Chat/ChatFilesDrawer';
+import { canvasOpenAtom } from '~/components/Canvas/state';
 import { useHasAccess, useLocalize } from '~/hooks';
 import store from '~/store';
 
@@ -43,12 +45,14 @@ export default function useExportShare({
     permission: Permissions.CREATE,
   });
   const conversation = useRecoilValue(store.conversationByIndex(0));
+  const setCanvasOpen = useSetAtom(canvasOpenAtom);
 
-  const exportable =
+  const hasConversation =
     conversation != null &&
     conversation.conversationId != null &&
-    conversation.conversationId !== 'new' &&
     conversation.conversationId !== 'search';
+
+  const exportable = hasConversation && conversation.conversationId !== 'new';
 
   /** Declared before the `exportable` gate so hook order stays stable. */
   const { data: share } = useGetSharedLinkQuery(conversation?.conversationId ?? '', {
@@ -56,6 +60,13 @@ export default function useExportShare({
   });
 
   const items: t.MenuItemProps[] = [
+    {
+      label: 'Canvas Workspace',
+      onClick: () => setCanvasOpen((prev) => !prev),
+      icon: <PanelRightOpen className="text-text-secondary size-4" />,
+      hideOnClick: true,
+      render: (props) => <button {...props} />,
+    },
     {
       label: 'Chat Files & Artifacts',
       onClick: () => setShowFilesDrawer(true),
@@ -68,7 +79,7 @@ export default function useExportShare({
       label: localize('com_ui_share'),
       onClick: () => setShowShareDialog(true),
       icon: <Share2 className="text-text-secondary size-4" />,
-      show: isSharedButtonEnabled && canCreateSharedLinks,
+      show: exportable && isSharedButtonEnabled && canCreateSharedLinks,
       /** NOTE: THE FOLLOWING PROPS ARE REQUIRED FOR MENU ITEMS THAT OPEN DIALOGS */
       hideOnClick: false,
       ref: shareButtonRef,
@@ -78,6 +89,7 @@ export default function useExportShare({
       label: localize('com_endpoint_export'),
       onClick: () => setShowExports(true),
       icon: <Upload className="text-text-secondary size-4" />,
+      show: exportable,
       /** NOTE: THE FOLLOWING PROPS ARE REQUIRED FOR MENU ITEMS THAT OPEN DIALOGS */
       hideOnClick: false,
       ref: exportButtonRef,
@@ -86,10 +98,10 @@ export default function useExportShare({
   ];
 
   return {
-    show: exportable,
+    show: hasConversation,
     items,
     hasSharedLink: Boolean(share?.shareId),
-    dialogs: exportable ? (
+    dialogs: hasConversation ? (
       <>
         <ChatFilesDrawer
           open={showFilesDrawer}
@@ -97,19 +109,23 @@ export default function useExportShare({
           conversation={conversation}
           triggerRef={filesDrawerButtonRef}
         />
-        <ExportModal
-          open={showExports}
-          onOpenChange={setShowExports}
-          conversation={conversation}
-          triggerRef={exportButtonRef}
-          aria-label={localize('com_ui_export_convo_modal')}
-        />
-        <ShareButton
-          triggerRef={shareButtonRef}
-          conversationId={conversation.conversationId ?? ''}
-          open={showShareDialog}
-          onOpenChange={setShowShareDialog}
-        />
+        {exportable && (
+          <>
+            <ExportModal
+              open={showExports}
+              onOpenChange={setShowExports}
+              conversation={conversation}
+              triggerRef={exportButtonRef}
+              aria-label={localize('com_ui_export_convo_modal')}
+            />
+            <ShareButton
+              triggerRef={shareButtonRef}
+              conversationId={conversation?.conversationId ?? ''}
+              open={showShareDialog}
+              onOpenChange={setShowShareDialog}
+            />
+          </>
+        )}
       </>
     ) : null,
   };

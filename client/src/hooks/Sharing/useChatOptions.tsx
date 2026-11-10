@@ -202,57 +202,62 @@ export default function useChatOptions({
 
   /** A temporary chat is excluded from the history, pinned, archived and project lists, so
    *  organizing it would report success and show nowhere. */
-  const canOrganize = !isTemporary;
+  const isNew = conversationId === '' || conversationId === 'new';
+  const canOrganize = !isTemporary && !isNew;
 
   const items: t.MenuItemProps[] = [
     ...exportShare.items,
-    { separate: true },
-    {
-      label: localize('com_ui_rename'),
-      onClick: () => setShowRename(true),
-      icon: <Pen className={iconClass} aria-hidden="true" />,
-      disabled: !canRename,
-      ariaHasPopup: 'dialog',
-      ariaControls: 'rename-conversation-dialog',
-      /** NOTE: THE FOLLOWING PROPS ARE REQUIRED FOR MENU ITEMS THAT OPEN DIALOGS */
-      hideOnClick: false,
-      ref: renameRef,
-      render: (props) => <button {...props} />,
-    },
-    {
-      label: localize(isPinned ? 'com_ui_unpin' : 'com_ui_pin'),
-      onClick: togglePin,
-      show: canOrganize,
-      icon: <Pin className={iconClass} aria-hidden="true" />,
-    },
-    { ...projectItem, show: canOrganize },
-    {
-      label: localize('com_ui_duplicate'),
-      onClick: () => duplicateMutation.mutate({ conversationId }),
-      icon: <CopyPlus className={iconClass} aria-hidden="true" />,
-    },
-    { separate: true },
-    {
-      label: localize(isArchived ? 'com_ui_unarchive' : 'com_ui_archive'),
-      onClick: toggleArchive,
-      show: canOrganize,
-      icon: isArchived ? (
-        <ArchiveRestore className={iconClass} aria-hidden="true" />
-      ) : (
-        <Archive className={iconClass} aria-hidden="true" />
-      ),
-    },
-    {
-      label: localize('com_ui_delete'),
-      onClick: () => setShowDelete(true),
-      icon: <Trash className={iconClass} aria-hidden="true" />,
-      ariaHasPopup: 'dialog',
-      ariaControls: 'delete-conversation-dialog',
-      /** NOTE: THE FOLLOWING PROPS ARE REQUIRED FOR MENU ITEMS THAT OPEN DIALOGS */
-      hideOnClick: false,
-      ref: deleteRef,
-      render: (props) => <button {...props} />,
-    },
+    ...(isNew
+      ? []
+      : [
+          { separate: true },
+          {
+            label: localize('com_ui_rename'),
+            onClick: () => setShowRename(true),
+            icon: <Pen className={iconClass} aria-hidden="true" />,
+            disabled: !canRename,
+            ariaHasPopup: 'dialog',
+            ariaControls: 'rename-conversation-dialog',
+            /** NOTE: THE FOLLOWING PROPS ARE REQUIRED FOR MENU ITEMS THAT OPEN DIALOGS */
+            hideOnClick: false,
+            ref: renameRef,
+            render: (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => <button {...props} />,
+          },
+          {
+            label: localize(isPinned ? 'com_ui_unpin' : 'com_ui_pin'),
+            onClick: togglePin,
+            show: canOrganize,
+            icon: <Pin className={iconClass} aria-hidden="true" />,
+          },
+          { ...projectItem, show: canOrganize },
+          {
+            label: localize('com_ui_duplicate'),
+            onClick: () => duplicateMutation.mutate({ conversationId }),
+            icon: <CopyPlus className={iconClass} aria-hidden="true" />,
+          },
+          { separate: true },
+          {
+            label: localize(isArchived ? 'com_ui_unarchive' : 'com_ui_archive'),
+            onClick: toggleArchive,
+            show: canOrganize,
+            icon: isArchived ? (
+              <ArchiveRestore className={iconClass} aria-hidden="true" />
+            ) : (
+              <Archive className={iconClass} aria-hidden="true" />
+            ),
+          },
+          {
+            label: localize('com_ui_delete'),
+            onClick: () => setShowDelete(true),
+            icon: <Trash className={iconClass} aria-hidden="true" />,
+            ariaHasPopup: 'dialog',
+            ariaControls: 'delete-conversation-dialog',
+            /** NOTE: THE FOLLOWING PROPS ARE REQUIRED FOR MENU ITEMS THAT OPEN DIALOGS */
+            hideOnClick: false,
+            ref: deleteRef,
+            render: (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => <button {...props} />,
+          },
+        ]),
   ];
 
   return {
