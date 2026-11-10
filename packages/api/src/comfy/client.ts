@@ -225,7 +225,7 @@ export class ComfyImageClient {
           signal: params.signal,
           redirect: 'error',
         });
-      } catch (_err: unknown) {
+      } catch (err: unknown) {
         if (params.signal?.aborted) {
           throw new ComfyGenerationError('Image generation cancelled by user', 499, 'ABORTED');
         }
@@ -288,7 +288,7 @@ export class ComfyImageClient {
             signal: params.signal,
             redirect: 'error',
           });
-        } catch (_err: unknown) {
+        } catch (err: unknown) {
           if (params.signal?.aborted) {
             throw new ComfyGenerationError('Image generation cancelled by user', 499, 'ABORTED');
           }
@@ -422,7 +422,7 @@ export class ComfyImageClient {
           signal: params.signal,
           redirect: 'error',
         });
-      } catch (_err: unknown) {
+      } catch (err: unknown) {
         if (params.signal?.aborted) {
           throw new ComfyGenerationError('Image generation cancelled by user', 499, 'ABORTED');
         }
