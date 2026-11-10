@@ -230,7 +230,7 @@ describe('Landing temporary chat empty state', () => {
 
     expect(screen.getByText('Welcome')).toBeInTheDocument();
     expect(screen.queryByText('Temporary Chat')).not.toBeInTheDocument();
-    expect(screen.getByTestId('convo-icon')).toBeInTheDocument();
+    expect(screen.getByTestId('ezity-avatar')).toBeInTheDocument();
   });
 });
 
