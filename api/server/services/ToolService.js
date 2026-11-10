@@ -1619,6 +1619,7 @@ async function loadToolDefinitionsWrapper({
   if (imageFiles.length > 0) {
     const hasOaiImageGen = filteredTools.includes('image_gen_oai');
     const hasGeminiImageGen = filteredTools.includes('gemini_image_gen');
+    const hasEditImage = filteredTools.includes('edit_image');
 
     if (hasOaiImageGen) {
       const toolContext = buildImageToolContext({
@@ -1639,6 +1640,18 @@ async function loadToolDefinitionsWrapper({
       });
       if (toolContext) {
         dynamicToolContextMap.gemini_image_gen = toolContext;
+      }
+    }
+
+    if (hasEditImage) {
+      const toolContext = buildImageToolContext({
+        imageFiles,
+        toolName: 'edit_image',
+        contextDescription: 'image editing',
+        paramName: 'reference_image_id',
+      });
+      if (toolContext) {
+        dynamicToolContextMap.edit_image = toolContext;
       }
     }
   }

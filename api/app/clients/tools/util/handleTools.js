@@ -614,6 +614,18 @@ const loadTools = async ({
 
     if (toolConstructors[tool]) {
       const options = toolOptions[tool] || {};
+      if (tool === 'edit_image') {
+        const imageFiles = options.imageFiles ?? [];
+        const toolContext = buildImageToolContext({
+          imageFiles,
+          toolName: 'edit_image',
+          contextDescription: 'image editing',
+          paramName: 'reference_image_id',
+        });
+        if (toolContext) {
+          dynamicToolContextMap.edit_image = toolContext;
+        }
+      }
       const toolInstance = loadToolWithAuth(
         user,
         getAuthFields(tool),

@@ -2,18 +2,21 @@
  * Builds tool context string for image generation tools based on available image files.
  * @param params - The parameters for building image context
  * @param params.imageFiles - Array of image file objects with file_id property
- * @param params.toolName - The name of the tool (e.g., 'gemini_image_gen', 'image_edit_oai')
+ * @param params.toolName - The name of the tool (e.g., 'gemini_image_gen', 'image_edit_oai', 'edit_image')
  * @param params.contextDescription - Description of what the images are for (e.g., 'image context', 'image editing')
+ * @param params.paramName - Name of the parameter expecting the image ID(s)
  * @returns The tool context string or empty string if no images
  */
 export function buildImageToolContext({
   imageFiles,
   toolName,
   contextDescription = 'image context',
+  paramName = 'image_ids',
 }: {
   imageFiles: Array<{ file_id: string }>;
   toolName: string;
   contextDescription?: string;
+  paramName?: string;
 }): string {
   if (!imageFiles || imageFiles.length === 0) {
     return '';
@@ -30,7 +33,11 @@ export function buildImageToolContext({
     }
     toolContext += `\n\t- ${file.file_id}`;
     if (i === imageFiles.length - 1) {
-      toolContext += `\n\nInclude any you need in the \`image_ids\` array when calling \`${toolName}\` to use them as visual context for generation. You may also include previously referenced or generated image IDs.`;
+      const paramRef =
+        paramName === 'reference_image_id'
+          ? 'the `reference_image_id` parameter (or `reference_image_ids` array)'
+          : `the \`${paramName}\` array`;
+      toolContext += `\n\nInclude any you need in ${paramRef} when calling \`${toolName}\` to use them as visual context for generation. You may also include previously referenced or generated image IDs.`;
     }
   }
   return toolContext;
