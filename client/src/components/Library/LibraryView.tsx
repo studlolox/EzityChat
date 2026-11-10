@@ -23,7 +23,7 @@ export default function LibraryView() {
   const navigate = useNavigate();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  useDocumentTitle(`${localize('com_ui_library')} | LibreChat`);
+  useDocumentTitle(`${localize('com_ui_library')} | Ezity AI`);
 
   const setCanvasOpen = useSetAtom(canvasOpenAtom);
   const setActiveDocId = useSetAtom(activeCanvasDocIdAtom);
