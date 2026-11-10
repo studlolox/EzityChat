@@ -15,7 +15,7 @@ export function EzityLogo({ size = 40, decorative = true, className = '' }: Ezit
       aria-hidden={decorative ? true : undefined}
     >
       <img
-        src="assets/ezity-logo.png"
+        src="assets/ezity-logo.svg"
         alt={decorative ? '' : 'Ezity AI'}
         width={size}
         height={size}
