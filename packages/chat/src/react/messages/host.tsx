@@ -142,10 +142,14 @@ export type MessageCopy = {
 
 /** What a message author's icon is drawn from: the endpoint and model, or the agent or
  *  assistant that wrote it. */
-export type MessageIconData = { endpoint?: string | null; isCreatedByUser?: boolean } & Pick<
-  TConversation,
-  'modelLabel'
-> &
+export type MessageIconData = {
+  endpoint?: string | null;
+  isCreatedByUser?: boolean;
+  error?: boolean;
+  unfinished?: boolean;
+  isSubmitting?: boolean;
+  hasActiveTool?: boolean;
+} & Pick<TConversation, 'modelLabel'> &
   Pick<TMessage, 'model' | 'iconURL'>;
 
 /** The props the app's message icon renders from. */

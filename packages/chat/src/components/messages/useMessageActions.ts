@@ -130,9 +130,27 @@ export default function useMessageActions(props: TMessageActions): MessageAction
     } else if (assistant) {
       return assistant.name ?? 'Assistant';
     } else {
-      return message?.sender;
+      if (message?.sender && message.sender !== 'AI') {
+        return message.sender;
+      }
+      let specLabel: string | undefined;
+      if (conversation?.spec === 'ezity-coder') {
+        specLabel = 'Ezity Coder';
+      } else if (conversation?.spec === 'ezity-default') {
+        specLabel = 'Ezity AI';
+      }
+      return conversation?.modelLabel ?? specLabel ?? message?.sender ?? 'AI';
     }
-  }, [message, agent, assistant, usernameDisplay, user, localize]);
+  }, [
+    message,
+    agent,
+    assistant,
+    usernameDisplay,
+    user,
+    localize,
+    conversation?.modelLabel,
+    conversation?.spec,
+  ]);
 
   const writeFeedback = messagesHost.useMessageFeedback(
     conversation?.conversationId || '',
