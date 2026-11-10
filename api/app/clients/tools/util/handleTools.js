@@ -172,6 +172,7 @@ const loadTools = async ({
     wolfram: StructuredWolfram,
     'stable-diffusion': StructuredSD,
     comfyui: ComfyUI,
+    generate_image: ComfyUI,
     'azure-ai-search': StructuredACS,
     traversaal_search: TraversaalSearch,
     tavily_search_results_json: TavilySearchResults,
@@ -259,6 +260,7 @@ const loadTools = async ({
     flux: imageGenOptions,
     'stable-diffusion': imageGenOptions,
     comfyui: imageGenOptions,
+    generate_image: imageGenOptions,
     gemini_image_gen: imageGenOptions,
   };
 
@@ -316,7 +318,20 @@ const loadTools = async ({
   const serverNameAliases = buildServerNameAliases(collisionAudit.names);
   const shadowedServers = findShadowedServerNames(collisionAudit.names);
 
-  for (const tool of tools) {
+  const dedupedTools = [];
+  const seenCanonical = new Set();
+  for (const t of tools) {
+    if (!t) {
+      continue;
+    }
+    const canonical = t === 'comfyui' ? 'generate_image' : t;
+    if (!seenCanonical.has(canonical)) {
+      seenCanonical.add(canonical);
+      dedupedTools.push(canonical);
+    }
+  }
+
+  for (const tool of dedupedTools) {
     /** `loadTools` is the shared boundary for every runtime that equips these
      *  tools — agents, and the Assistants required-action flow via
      *  `processRequiredActions`, which never passes through the agent capability
@@ -605,12 +620,16 @@ const loadTools = async ({
     }
   }
 
+  if (requestedTools.generate_image && !requestedTools.comfyui) {
+    requestedTools.comfyui = requestedTools.generate_image;
+  }
+
   if (returnMap) {
     return requestedTools;
   }
 
   const toolPromises = [];
-  for (const tool of tools) {
+  for (const tool of dedupedTools) {
     const validTool = requestedTools[tool];
     if (validTool) {
       toolPromises.push(

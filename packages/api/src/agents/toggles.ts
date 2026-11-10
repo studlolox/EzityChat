@@ -45,7 +45,11 @@ export type EphemeralToolSource = Pick<
 export type SpecToolSource = Pick<
   TModelSpec,
   'webSearch' | 'fileSearch' | 'executeCode' | 'memory' | 'askUserQuestion'
->;
+> & {
+  preset?: {
+    tools?: unknown;
+  };
+};
 
 /**
  * Resolves the tool ids an ephemeral agent is equipped with, taking the model
@@ -63,6 +67,26 @@ export function resolveEphemeralTools(
       tools.push(TOOL_NAMES[toggleKey]);
     }
   }
+
+  const presetTools = modelSpec?.preset?.tools;
+  if (Array.isArray(presetTools)) {
+    for (const tool of presetTools) {
+      const toolName =
+        typeof tool === 'string'
+          ? tool
+          : (tool as { pluginKey?: string; function?: { name?: string } } | undefined)?.pluginKey ||
+            (tool as { pluginKey?: string; function?: { name?: string } } | undefined)?.function
+              ?.name;
+      if (typeof toolName !== 'string' || !toolName) {
+        continue;
+      }
+      const canonical = toolName === 'comfyui' ? 'generate_image' : toolName;
+      if (!tools.includes(canonical)) {
+        tools.push(canonical);
+      }
+    }
+  }
+
   return tools;
 }
 

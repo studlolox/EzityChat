@@ -1,8 +1,16 @@
 const { Tool } = require('@librechat/agents/langchain/tools');
-const { executeComfyGenerate, comfyGenerateImageSchema } = require('@librechat/api');
+const {
+  executeComfyGenerate,
+  executeGenerateImage,
+  generateImageSchema,
+  comfyGenerateImageSchema,
+} = require('@librechat/api');
 
 const displayMessage =
   'Image generation complete. The generated image is displayed inline in the conversation.';
+
+const schema = generateImageSchema || comfyGenerateImageSchema;
+const execute = executeGenerateImage || executeComfyGenerate;
 
 class ComfyUIAPI extends Tool {
   constructor(fields = {}) {
@@ -17,16 +25,15 @@ class ComfyUIAPI extends Tool {
       this.uploadImageBuffer = fields.uploadImageBuffer.bind(this);
     }
 
-    this.name = 'comfyui';
-    this.description =
-      'Generate high-quality images and artwork using the local ComfyUI Qwen-Image 2.1 engine.';
+    this.name = 'generate_image';
+    this.description = 'Generate high-quality images and artwork using the AI image engine.';
     this.description_for_model =
-      'Use "comfyui" to generate images, artwork, posters, illustrations, or photo-realistic visuals. Always describe the visual attributes, subject, medium, and lighting in the prompt.';
-    this.schema = comfyGenerateImageSchema;
+      'Use "generate_image" to generate images, artwork, posters, illustrations, or photo-realistic visuals. Always describe the visual attributes, subject, medium, and lighting in the prompt.';
+    this.schema = schema;
   }
 
   static get jsonSchema() {
-    return comfyGenerateImageSchema;
+    return schema;
   }
 
   returnValue(value) {
@@ -39,7 +46,7 @@ class ComfyUIAPI extends Tool {
   }
 
   async _call(data) {
-    const result = await executeComfyGenerate(data, {
+    const result = await execute(data, {
       userId: this.userId,
       req: this.req,
       uploadImageBuffer: this.uploadImageBuffer,

@@ -617,6 +617,163 @@ describe('loadAgent', () => {
     expect(withoutFlag?.tools).not.toContain('ask_user_question');
   });
 
+  describe('model spec preset tools attachment and generate_image normalization', () => {
+    const { EPHEMERAL_AGENT_ID } = Constants;
+
+    test('attaches generate_image when configured in modelSpec.preset.tools', async () => {
+      const result = await loadAgent(
+        {
+          req: {
+            user: { id: 'user123' },
+            body: {},
+            config: {
+              config: {},
+              fileStrategy: FileSources.local,
+              imageOutputType: 'png',
+              modelSpecs: {
+                list: [
+                  {
+                    name: 'ezity-default',
+                    label: 'Ezity AI',
+                    preset: {
+                      endpoint: 'Ezity Gateway',
+                      model: 'ezity-ai',
+                      tools: ['generate_image', 'calculator'],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+          spec: 'ezity-default',
+          agent_id: EPHEMERAL_AGENT_ID as string,
+          endpoint: 'Ezity Gateway',
+          model_parameters: { model: 'ezity-ai' } as unknown as AgentModelParameters,
+        },
+        deps,
+      );
+
+      expect(result?.tools).toContain('generate_image');
+      expect(result?.tools).toContain('calculator');
+    });
+
+    test('normalizes legacy comfyui alias in modelSpec.preset.tools to generate_image', async () => {
+      const result = await loadAgent(
+        {
+          req: {
+            user: { id: 'user123' },
+            body: {},
+            config: {
+              config: {},
+              fileStrategy: FileSources.local,
+              imageOutputType: 'png',
+              modelSpecs: {
+                list: [
+                  {
+                    name: 'legacy-comfy',
+                    label: 'Legacy Comfy',
+                    preset: {
+                      endpoint: 'Ezity Gateway',
+                      model: 'ezity-ai',
+                      tools: ['comfyui', 'calculator'],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+          spec: 'legacy-comfy',
+          agent_id: EPHEMERAL_AGENT_ID as string,
+          endpoint: 'Ezity Gateway',
+          model_parameters: { model: 'ezity-ai' } as unknown as AgentModelParameters,
+        },
+        deps,
+      );
+
+      expect(result?.tools).toContain('generate_image');
+      expect(result?.tools).not.toContain('comfyui');
+    });
+
+    test('deduplicates when both comfyui and generate_image are provided', async () => {
+      const result = await loadAgent(
+        {
+          req: {
+            user: { id: 'user123' },
+            body: {
+              tools: ['comfyui', 'generate_image'],
+            },
+            config: {
+              config: {},
+              fileStrategy: FileSources.local,
+              imageOutputType: 'png',
+              modelSpecs: {
+                list: [
+                  {
+                    name: 'ezity-default',
+                    label: 'Ezity AI',
+                    preset: {
+                      endpoint: 'Ezity Gateway',
+                      model: 'ezity-ai',
+                      tools: ['comfyui', 'generate_image'],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+          spec: 'ezity-default',
+          agent_id: EPHEMERAL_AGENT_ID as string,
+          endpoint: 'Ezity Gateway',
+          model_parameters: { model: 'ezity-ai' } as unknown as AgentModelParameters,
+        },
+        deps,
+      );
+
+      const occurrences = result?.tools?.filter((t) => t === 'generate_image') ?? [];
+      expect(occurrences).toHaveLength(1);
+      expect(result?.tools).not.toContain('comfyui');
+    });
+
+    test('does not attach generate_image to ezity-coder preset without image tools', async () => {
+      const result = await loadAgent(
+        {
+          req: {
+            user: { id: 'user123' },
+            body: {},
+            config: {
+              config: {},
+              fileStrategy: FileSources.local,
+              imageOutputType: 'png',
+              modelSpecs: {
+                list: [
+                  {
+                    name: 'ezity-coder',
+                    label: 'Ezity Coder',
+                    preset: {
+                      endpoint: 'Ezity Gateway',
+                      model: 'ezity-ai-coder',
+                      tools: ['calculator', 'github_compare'],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+          spec: 'ezity-coder',
+          agent_id: EPHEMERAL_AGENT_ID as string,
+          endpoint: 'Ezity Gateway',
+          model_parameters: { model: 'ezity-ai-coder' } as unknown as AgentModelParameters,
+        },
+        deps,
+      );
+
+      expect(result?.tools).not.toContain('generate_image');
+      expect(result?.tools).not.toContain('comfyui');
+      expect(result?.tools).toContain('calculator');
+      expect(result?.tools).toContain('github_compare');
+    });
+  });
+
   test('synthesizes background tool_options for eligible MCP tools from the ephemeralAgent flag', async () => {
     const { EPHEMERAL_AGENT_ID } = Constants;
     mockGetMCPServerTools.mockResolvedValue({ crm_lookup: { name: 'crm_lookup' } });

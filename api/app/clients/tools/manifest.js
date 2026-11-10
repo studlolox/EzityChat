@@ -13,6 +13,11 @@ availableTools.forEach((tool) => {
   }
 });
 
+// Legacy alias compatibility for comfyui -> generate_image
+if (manifestToolMap.generate_image && !manifestToolMap.comfyui) {
+  manifestToolMap.comfyui = manifestToolMap.generate_image;
+}
+
 /**
  * Whether a tool (string pluginKey, or an OpenAI function-tool object) is
  * flagged `agentsOnly` in the manifest — usable only on the agents runtime

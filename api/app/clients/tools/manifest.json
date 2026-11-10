@@ -92,17 +92,11 @@
     "authConfig": []
   },
   {
-    "name": "ComfyUI",
-    "pluginKey": "comfyui",
-    "description": "Generate and edit images using the local ComfyUI Qwen-Image 2.1 engine.",
-    "icon": "assets/comfyui.svg",
-    "authConfig": [
-      {
-        "authField": "COMFYUI_URL",
-        "label": "ComfyUI Instance URL",
-        "description": "The URL of the ComfyUI server (default: http://127.0.0.1:8188)."
-      }
-    ]
+    "name": "Generate Image",
+    "pluginKey": "generate_image",
+    "description": "Generate high-quality images and artwork using the AI image engine.",
+    "icon": "assets/generate_image.svg",
+    "authConfig": []
   },
   {
     "name": "Stable Diffusion",

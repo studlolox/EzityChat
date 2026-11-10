@@ -346,6 +346,45 @@ describe('Tool Handlers', () => {
       expect(loadedTools[0].name).toBe(ASK_USER_QUESTION_TOOL_NAME);
     });
 
+    it('loads generate_image without authentication requirements', async () => {
+      const { loadedTools } = await loadTools({
+        user: fakeUser._id,
+        tools: ['generate_image'],
+      });
+      expect(loadedTools).toHaveLength(1);
+      expect(loadedTools[0].name).toBe('generate_image');
+    });
+
+    it('normalizes legacy comfyui alias to generate_image', async () => {
+      const { loadedTools } = await loadTools({
+        user: fakeUser._id,
+        tools: ['comfyui'],
+      });
+      expect(loadedTools).toHaveLength(1);
+      expect(loadedTools[0].name).toBe('generate_image');
+    });
+
+    it('deduplicates comfyui and generate_image so the model receives only one tool schema', async () => {
+      const { loadedTools } = await loadTools({
+        user: fakeUser._id,
+        tools: ['comfyui', 'generate_image'],
+      });
+      expect(loadedTools).toHaveLength(1);
+      expect(loadedTools[0].name).toBe('generate_image');
+    });
+
+    it('resolves both generate_image and legacy comfyui keys when returnMap is true', async () => {
+      const toolMap = await loadTools({
+        user: fakeUser._id,
+        tools: ['generate_image'],
+        returnMap: true,
+      });
+      expect(toolMap.generate_image).toBeDefined();
+      expect(toolMap.comfyui).toBeDefined();
+      const toolInstance = await toolMap.comfyui();
+      expect(toolInstance.name).toBe('generate_image');
+    });
+
     it('routes code file priming to the selected bridge worker', async () => {
       const bridgeWorkerId = 'principal-worker';
       const controller = new AbortController();

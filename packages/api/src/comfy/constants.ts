@@ -1,10 +1,12 @@
 export const PNG_MAGIC: Buffer = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 export const MAX_IMAGE_PROMPT_CHARS = 2000;
-export const MAX_IMAGE_DOWNLOAD_BYTES: number = 25 * 1024 * 1024; // 25 MiB cap
+export const MAX_IMAGE_DOWNLOAD_BYTES: number = 20 * 1024 * 1024; // 20 MiB cap
+export const DEFAULT_GATEWAY_URL = 'http://ai-gateway:3001';
 export const DEFAULT_COMFYUI_URL = 'http://127.0.0.1:8188';
 export const DEFAULT_IMAGE_TIMEOUT_MS = 600000; // 10 minutes default for ComfyUI / MPS workloads
-export const DEFAULT_IMAGE_POLL_MS = 1000;
+export const DEFAULT_IMAGE_POLL_MS = 500;
+export const DEFAULT_STALL_TIMEOUT_MS = 240000; // 4 minutes without progress
 
 export const WORKFLOW_TURBO = 'qwen21-turbo' as const;
 export const WORKFLOW_UC = 'qwen21-uc' as const;

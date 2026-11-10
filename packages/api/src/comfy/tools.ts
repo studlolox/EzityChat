@@ -1,10 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+
+import type { ComfyClientOptions } from './client';
+
 import { ComfyImageClient, sanitizeErrorMessage } from './client';
 import { ALLOWED_IMAGE_SIZES } from './constants';
 
-export const comfyGenerateImageSchema: Record<string, unknown> = {
+export const generateImageSchema: Record<string, unknown> = {
   type: 'object',
   properties: {
     prompt: {
@@ -34,7 +37,9 @@ export const comfyGenerateImageSchema: Record<string, unknown> = {
   required: ['prompt'],
 };
 
-export const comfyEditImageSchema: Record<string, unknown> = {
+export const comfyGenerateImageSchema: Record<string, unknown> = generateImageSchema;
+
+export const editImageSchema: Record<string, unknown> = {
   type: 'object',
   properties: {
     prompt: {
@@ -55,9 +60,12 @@ export const comfyEditImageSchema: Record<string, unknown> = {
   required: ['prompt'],
 };
 
+export const comfyEditImageSchema: Record<string, unknown> = editImageSchema;
+
 export interface ComfyToolExecuteOptions {
   userId: string;
   imageOutputPath?: string;
+  clientOptions?: ComfyClientOptions;
   uploadImageBuffer?: (params: {
     req: unknown;
     context: string;
@@ -75,6 +83,8 @@ export interface ComfyToolExecuteOptions {
   req?: unknown;
 }
 
+export type GenerateImageToolExecuteOptions = ComfyToolExecuteOptions;
+
 export async function executeComfyGenerate(
   args: { prompt: string; size?: string; workflow?: string; transparent?: boolean },
   options: ComfyToolExecuteOptions,
@@ -88,7 +98,7 @@ export async function executeComfyGenerate(
   url: string;
   message?: string;
 }> {
-  const client = new ComfyImageClient();
+  const client = new ComfyImageClient(options.clientOptions);
 
   try {
     const result = await client.generate({
@@ -153,3 +163,5 @@ export async function executeComfyGenerate(
     };
   }
 }
+
+export const executeGenerateImage: typeof executeComfyGenerate = executeComfyGenerate;

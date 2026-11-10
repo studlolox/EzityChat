@@ -60,6 +60,8 @@ export interface LoadAgentParams {
     body?: {
       promptPrefix?: string;
       ephemeralAgent?: TEphemeralAgent;
+      preset?: { tools?: string[] };
+      tools?: string[];
     };
   };
   spec?: string;
@@ -113,6 +115,20 @@ export async function loadEphemeralAgent(
    *  equips `ask_user_question` when the request is HITL-capable, the agent is
    *  not a subagent, and the admin hasn't excluded it. */
   const tools: string[] = resolveEphemeralTools(ephemeralAgent, modelSpec);
+  const extraTools =
+    (req.body as { preset?: { tools?: string[] }; tools?: string[] } | undefined)?.preset?.tools ||
+    (req.body as { tools?: string[] } | undefined)?.tools;
+  if (Array.isArray(extraTools)) {
+    for (const tool of extraTools) {
+      if (typeof tool !== 'string' || !tool) {
+        continue;
+      }
+      const canonical = tool === 'comfyui' ? 'generate_image' : tool;
+      if (!tools.includes(canonical)) {
+        tools.push(canonical);
+      }
+    }
+  }
 
   if (mcpServers.size > 0) {
     const serverToolKeys = await mapWithConcurrency(
