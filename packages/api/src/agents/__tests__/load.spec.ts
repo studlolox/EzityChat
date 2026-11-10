@@ -657,6 +657,43 @@ describe('loadAgent', () => {
       expect(result?.tools).toContain('calculator');
     });
 
+    test('attaches edit_image alongside generate_image when configured in modelSpec.preset.tools', async () => {
+      const result = await loadAgent(
+        {
+          req: {
+            user: { id: 'user123' },
+            body: {},
+            config: {
+              config: {},
+              fileStrategy: FileSources.local,
+              imageOutputType: 'png',
+              modelSpecs: {
+                list: [
+                  {
+                    name: 'ezity-default',
+                    label: 'Ezity AI',
+                    preset: {
+                      endpoint: 'Ezity Gateway',
+                      model: 'ezity-ai',
+                      tools: ['generate_image', 'edit_image'],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+          spec: 'ezity-default',
+          agent_id: EPHEMERAL_AGENT_ID as string,
+          endpoint: 'Ezity Gateway',
+          model_parameters: { model: 'ezity-ai' } as unknown as AgentModelParameters,
+        },
+        deps,
+      );
+
+      expect(result?.tools).toContain('generate_image');
+      expect(result?.tools).toContain('edit_image');
+    });
+
     test('normalizes legacy comfyui alias in modelSpec.preset.tools to generate_image', async () => {
       const result = await loadAgent(
         {

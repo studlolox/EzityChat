@@ -355,6 +355,15 @@ describe('Tool Handlers', () => {
       expect(loadedTools[0].name).toBe('generate_image');
     });
 
+    it('loads edit_image without authentication requirements', async () => {
+      const { loadedTools } = await loadTools({
+        user: fakeUser._id,
+        tools: ['edit_image'],
+      });
+      expect(loadedTools).toHaveLength(1);
+      expect(loadedTools[0].name).toBe('edit_image');
+    });
+
     it('normalizes legacy comfyui alias to generate_image', async () => {
       const { loadedTools } = await loadTools({
         user: fakeUser._id,

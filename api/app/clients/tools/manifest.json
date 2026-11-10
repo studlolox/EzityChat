@@ -99,6 +99,13 @@
     "authConfig": []
   },
   {
+    "name": "Edit Image",
+    "pluginKey": "edit_image",
+    "description": "Edit, transform, inpaint, outpaint, or combine images using the AI image engine.",
+    "icon": "assets/generate_image.svg",
+    "authConfig": []
+  },
+  {
     "name": "Stable Diffusion",
     "pluginKey": "stable-diffusion",
     "description": "Generate photo-realistic images given any text input.",

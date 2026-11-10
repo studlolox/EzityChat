@@ -57,6 +57,7 @@ const {
   OpenWeather,
   StructuredSD,
   ComfyUI,
+  EditImage,
   StructuredACS,
   TraversaalSearch,
   StructuredWolfram,
@@ -173,6 +174,7 @@ const loadTools = async ({
     'stable-diffusion': StructuredSD,
     comfyui: ComfyUI,
     generate_image: ComfyUI,
+    edit_image: EditImage,
     'azure-ai-search': StructuredACS,
     traversaal_search: TraversaalSearch,
     tavily_search_results_json: TavilySearchResults,
@@ -247,6 +249,8 @@ const loadTools = async ({
     processFileURL: options.processFileURL,
     returnMetadata: options.returnMetadata,
     uploadImageBuffer: options.uploadImageBuffer,
+    imageFiles:
+      options.tool_resources?.[EToolResources.image_edit]?.files ?? options.imageFiles ?? [],
   };
 
   const timeoutOptions = { timeouts: options.req?.config?.timeouts };
@@ -261,6 +265,7 @@ const loadTools = async ({
     'stable-diffusion': imageGenOptions,
     comfyui: imageGenOptions,
     generate_image: imageGenOptions,
+    edit_image: imageGenOptions,
     gemini_image_gen: imageGenOptions,
   };
 

@@ -15,6 +15,8 @@ const { ContentTypes } = require('librechat-data-provider');
 const { ToolMessage } = require('@librechat/agents/langchain/messages');
 const StableDiffusionAPI = require('../StableDiffusion');
 const FluxAPI = require('../FluxAPI');
+const ComfyUIAPI = require('../ComfyUI');
+const EditImageAPI = require('../EditImage');
 
 jest.mock('axios');
 jest.mock('node-fetch');
@@ -514,6 +516,74 @@ describe('image tools - agent mode ToolMessage format', () => {
       const contentStr =
         typeof result.content === 'string' ? result.content : JSON.stringify(result.content);
       expect(contentStr).toContain('Error making API request');
+    });
+  });
+
+  describe('ComfyUIAPI (generate_image)', () => {
+    it('sets responseFormat to content_and_artifact when isAgent is true', () => {
+      const tool = new ComfyUIAPI({ isAgent: true, userId: 'user-1' });
+      expect(tool.responseFormat).toBe('content_and_artifact');
+    });
+
+    it('invoke() returns ToolMessage with base64 in artifact, not serialized in content', async () => {
+      const tool = new ComfyUIAPI({ isAgent: true, userId: 'user-1' });
+      jest.spyOn(tool, '_call').mockResolvedValue([
+        [{ type: ContentTypes.TEXT, text: 'Image generation complete.' }],
+        {
+          content: [
+            {
+              type: ContentTypes.IMAGE_URL,
+              image_url: { url: `data:image/png;base64,${FAKE_BASE64}` },
+            },
+          ],
+          file_ids: ['img-123'],
+        },
+      ]);
+
+      const result = await tool.invoke(
+        makeToolCall('generate_image', { prompt: 'a cybernetic cat' }),
+      );
+
+      expect(result).toBeInstanceOf(ToolMessage);
+      const contentStr =
+        typeof result.content === 'string' ? result.content : JSON.stringify(result.content);
+      expect(contentStr).not.toContain(FAKE_BASE64);
+      expect(result.artifact?.content?.[0]?.type).toBe(ContentTypes.IMAGE_URL);
+      expect(result.artifact?.content?.[0]?.image_url?.url).toContain(FAKE_BASE64);
+    });
+  });
+
+  describe('EditImageAPI (edit_image)', () => {
+    it('sets responseFormat to content_and_artifact when isAgent is true', () => {
+      const tool = new EditImageAPI({ isAgent: true, userId: 'user-1' });
+      expect(tool.responseFormat).toBe('content_and_artifact');
+    });
+
+    it('invoke() returns ToolMessage with base64 in artifact, not serialized in content', async () => {
+      const tool = new EditImageAPI({ isAgent: true, userId: 'user-1' });
+      jest.spyOn(tool, '_call').mockResolvedValue([
+        [{ type: ContentTypes.TEXT, text: 'Image editing complete.' }],
+        {
+          content: [
+            {
+              type: ContentTypes.IMAGE_URL,
+              image_url: { url: `data:image/png;base64,${FAKE_BASE64}` },
+            },
+          ],
+          file_ids: ['img-edited-456'],
+        },
+      ]);
+
+      const result = await tool.invoke(
+        makeToolCall('edit_image', { prompt: 'Make the cat golden', reference_image_id: 'ref-1' }),
+      );
+
+      expect(result).toBeInstanceOf(ToolMessage);
+      const contentStr =
+        typeof result.content === 'string' ? result.content : JSON.stringify(result.content);
+      expect(contentStr).not.toContain(FAKE_BASE64);
+      expect(result.artifact?.content?.[0]?.type).toBe(ContentTypes.IMAGE_URL);
+      expect(result.artifact?.content?.[0]?.image_url?.url).toContain(FAKE_BASE64);
     });
   });
 });

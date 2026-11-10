@@ -1,4 +1,4 @@
-import crypto from 'node:crypto';
+import * as crypto from 'node:crypto';
 
 import type { SupportedWorkflowId } from './constants';
 
@@ -34,6 +34,10 @@ export interface ComfyGenerateParams {
   negative_prompt?: string;
   referenceJobId?: string;
   reference_job_id?: string;
+  referenceImage?: string;
+  reference_image?: string;
+  referenceImages?: string[];
+  reference_images?: string[];
   editMode?: 'generate' | 'edit' | 'inpaint' | 'outpaint' | 'combine';
   edit_mode?: 'generate' | 'edit' | 'inpaint' | 'outpaint' | 'combine';
   maskImage?: string;
@@ -203,6 +207,14 @@ export class ComfyImageClient {
       if (transparent !== undefined) {
         submitPayload.transparent_background = transparent;
       }
+      const refImg = params.referenceImage || params.reference_image;
+      if (refImg) {
+        submitPayload.reference_image = refImg;
+      }
+      const refImgs = params.referenceImages || params.reference_images;
+      if (Array.isArray(refImgs) && refImgs.length > 0) {
+        submitPayload.reference_images = refImgs;
+      }
 
       let submitRes: Response;
       try {
@@ -213,7 +225,7 @@ export class ComfyImageClient {
           signal: params.signal,
           redirect: 'error',
         });
-      } catch (err: unknown) {
+      } catch (_err: unknown) {
         if (params.signal?.aborted) {
           throw new ComfyGenerationError('Image generation cancelled by user', 499, 'ABORTED');
         }
@@ -276,7 +288,7 @@ export class ComfyImageClient {
             signal: params.signal,
             redirect: 'error',
           });
-        } catch (err: unknown) {
+        } catch (_err: unknown) {
           if (params.signal?.aborted) {
             throw new ComfyGenerationError('Image generation cancelled by user', 499, 'ABORTED');
           }
@@ -386,10 +398,21 @@ export class ComfyImageClient {
       }
 
       // 3. Download generated image output
-      const outputRoute = outputDescriptor.route.startsWith('/')
-        ? outputDescriptor.route
-        : `/${outputDescriptor.route}`;
-      const outputFetchUrl = `${this.baseUrl}${outputRoute}`;
+      let outputFetchUrl: string;
+      try {
+        const parsedBase = new URL(this.baseUrl);
+        const resolvedUrl = new URL(outputDescriptor.route, parsedBase.href);
+        if (resolvedUrl.origin !== parsedBase.origin) {
+          throw new Error('Output route resolved to untrusted origin');
+        }
+        outputFetchUrl = resolvedUrl.toString();
+      } catch (_err: unknown) {
+        throw new ComfyGenerationError(
+          'Output route from gateway rejected by SSRF guard',
+          502,
+          'SSRF_REJECTED',
+        );
+      }
 
       let viewRes: Response;
       try {
@@ -399,7 +422,7 @@ export class ComfyImageClient {
           signal: params.signal,
           redirect: 'error',
         });
-      } catch (err: unknown) {
+      } catch (_err: unknown) {
         if (params.signal?.aborted) {
           throw new ComfyGenerationError('Image generation cancelled by user', 499, 'ABORTED');
         }

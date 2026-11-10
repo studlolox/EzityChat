@@ -1,4 +1,5 @@
 const { Tool } = require('@librechat/agents/langchain/tools');
+const { ContentTypes } = require('librechat-data-provider');
 const {
   executeComfyGenerate,
   executeGenerateImage,
@@ -28,7 +29,7 @@ class ComfyUIAPI extends Tool {
     this.name = 'generate_image';
     this.description = 'Generate high-quality images and artwork using the AI image engine.';
     this.description_for_model =
-      'Use "generate_image" to generate images, artwork, posters, illustrations, or photo-realistic visuals. Always describe the visual attributes, subject, medium, and lighting in the prompt.';
+      'Use "generate_image" to generate brand new images, artwork, posters, illustrations, or photo-realistic visuals based on text descriptions. Do NOT use this tool to edit, modify, or extend uploaded pictures — use "edit_image" instead.';
     this.schema = schema;
   }
 
@@ -54,6 +55,24 @@ class ComfyUIAPI extends Tool {
 
     if (!result.success) {
       return this.returnValue(result.message || 'Image generation failed.');
+    }
+
+    if (this.isAgent) {
+      const content = [
+        {
+          type: ContentTypes.IMAGE_URL,
+          image_url: {
+            url: result.data_url || `data:image/png;base64,${result.base64}`,
+          },
+        },
+      ];
+      const response = [
+        {
+          type: ContentTypes.TEXT,
+          text: displayMessage,
+        },
+      ];
+      return [response, { content, file_ids: [result.file_id] }];
     }
 
     return this.returnValue(result.markdown || result.url);
