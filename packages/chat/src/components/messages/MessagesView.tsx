@@ -204,7 +204,7 @@ export default function MessagesView({
           onScroll={debouncedHandleScroll}
           ref={scrollableRef}
         >
-          <div ref={contentRef} className="flex flex-col pt-14 pb-9">
+          <div ref={contentRef} className="messages-safe-top flex flex-col pb-9">
             {messagesTree === null || messagesTree?.length === 0 ? (
               <div
                 className={cn(

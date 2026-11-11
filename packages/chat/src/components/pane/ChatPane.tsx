@@ -122,7 +122,7 @@ export default function ChatPane(props: ChatPaneProps): ReactElement {
         <div
           ref={bandRef}
           className={cn(
-            'bg-surface-canvas relative z-10 w-full [view-transition-name:chat-form]',
+            'bg-surface-canvas composer-safe-bottom relative z-10 w-full [view-transition-name:chat-form]',
             !isLanding && 'scrollbar-gutter-spacer',
             isLanding && 'max-w-3xl transition-all duration-200 xl:max-w-4xl',
           )}

@@ -13,3 +13,11 @@
   --color-gray-*: initial;
   --color-green-*: initial;
 }
+
+@utility messages-safe-top {
+  padding-top: calc(3.5rem + env(safe-area-inset-top, 0px));
+}
+
+@utility composer-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

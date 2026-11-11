@@ -154,7 +154,7 @@ export default function Presentation({
             isSubmitting={isSubmitting}
           >
             <SidePanelGroup panel={panelElement}>
-              <main className="flex h-full flex-col overflow-y-auto" role="main">
+              <main className="flex h-full flex-col overflow-hidden" role="main">
                 <MessageSurfaceContext.Provider value="bg-surface-canvas">
                   {children}
                 </MessageSurfaceContext.Provider>
