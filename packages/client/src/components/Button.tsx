@@ -340,7 +340,7 @@ const buttonVariantRecipe = cva(
         /** `bare` at the small text size with a tight gap, for an inline toggle beside its glyph
          *  such as a clipped text's Show more. */
         'bare-xs': 'h-auto gap-1 p-0 text-xs',
-        icon: 'size-theme-button',
+        icon: 'size-theme-button touch:size-theme-control-touch',
         'icon-sm': 'size-theme-icon-button-sm p-0',
         'icon-xs': 'size-theme-button-xs',
         /**

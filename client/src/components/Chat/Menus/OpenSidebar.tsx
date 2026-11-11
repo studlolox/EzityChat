@@ -2,6 +2,7 @@ import { TooltipAnchor, Button, Sidebar } from '@librechat/client';
 import { useShortcutAriaKey, useShortcutHint } from '~/hooks/useKeyboardShortcuts';
 import useSidebarToggle from '~/hooks/Nav/useSidebarToggle';
 import { useLocalize } from '~/hooks';
+import { cn } from '~/utils';
 
 export const CLOSE_SIDEBAR_ID = 'close-sidebar-button';
 export const OPEN_SIDEBAR_ID = 'open-sidebar-button';
@@ -49,7 +50,7 @@ export default function OpenSidebar({
           aria-expanded={false}
           aria-controls="chat-history-nav"
           aria-keyshortcuts={ariaKey}
-          className={className}
+          className={cn('touch:size-11 size-9 shrink-0', className)}
           onClick={handleClick}
         >
           <Sidebar className="icon-md rtl:-scale-x-100" aria-hidden="true" />

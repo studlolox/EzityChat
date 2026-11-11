@@ -81,7 +81,7 @@ export const CustomMenu = React.forwardRef<HTMLDivElement, CustomMenuProps>(func
           'border-border-menu rounded-theme-menu-panel w-[var(--menu-width,auto)] min-w-[min(18.75rem,90vw)] flex-col overflow-auto border',
           'bg-surface-menu text-text-primary text-sm shadow-lg',
           parent ? 'px-0.5 py-0.5' : 'px-3 py-2',
-          'max-w-[calc(100vw-4rem)] sm:max-h-[calc(65vh)] sm:max-w-[25rem]',
+          'max-w-[calc(100vw-1.5rem)] sm:max-h-[calc(65vh)] sm:max-w-[25rem]',
           searchable && 'p-0',
         )}
       >

@@ -90,7 +90,7 @@ function Switcher({
            */
           className={cn(
             buttonVariants({ variant: 'ghost' }),
-            'text-text-primary h-10 min-w-0 flex-1 justify-start px-2',
+            'text-text-primary touch:h-11 h-10 min-w-0 flex-1 justify-start px-2',
           )}
         >
           <activeLink.icon className="size-5 shrink-0" aria-hidden="true" />

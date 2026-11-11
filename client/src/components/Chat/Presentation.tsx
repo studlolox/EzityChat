@@ -14,7 +14,9 @@ import UndockedArtifacts from '~/components/Artifacts/UndockedArtifacts';
 import CanvasWorkspace from '~/components/Canvas/CanvasWorkspace';
 import { artifactsUndocked } from '~/components/Artifacts/state';
 import { EditorProvider, ArtifactsProvider } from '~/Providers';
+import { ARTIFACTS_SHEET_MAX_WIDTH } from '~/utils/breakpoints';
 import { canvasOpenAtom } from '~/components/Canvas/state';
+import useScaledMaxWidth from '~/hooks/useScaledMaxWidth';
 import { SidePanelGroup } from '~/components/SidePanel';
 import AppChatSurface from '~/components/Chat/Surface';
 import { useGetStartupConfig } from '~/data-provider';
@@ -54,6 +56,7 @@ export default function Presentation({
   const setSelectedSubagent = useSetAtom(activeSubagentPanel);
   const resetSelectedSubagent = useCallback(() => setSelectedSubagent(null), [setSelectedSubagent]);
   const previousConversationIdRef = useRef<string | null>(null);
+  const isSmallScreen = useScaledMaxWidth(ARTIFACTS_SHEET_MAX_WIDTH);
 
   useArtifactsRegistryLifetime(conversationId);
 
@@ -131,12 +134,12 @@ export default function Presentation({
     if (canvasOpen) {
       return (
         <Suspense fallback={null}>
-          <CanvasWorkspace conversationId={conversationId ?? ''} />
+          <CanvasWorkspace conversationId={conversationId ?? ''} isMobileSheet={isSmallScreen} />
         </Suspense>
       );
     }
     return null;
-  }, [canvasOpen, conversationId]);
+  }, [canvasOpen, conversationId, isSmallScreen]);
 
   /* Undocked, the pane renders into its own window: the side panel gives its
    * width back to the conversation instead of holding an empty column. */

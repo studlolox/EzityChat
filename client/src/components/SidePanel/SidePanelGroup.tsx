@@ -76,7 +76,11 @@ const SidePanelGroup = memo(({ panel, children }: SidePanelProps) => {
           {reversed ? panels.reverse() : panels}
         </ResizablePanelGroup>
       </div>
-      {panel != null && isSmallScreen && <div className="fixed inset-0 z-[100]">{panel}</div>}
+      {panel != null && isSmallScreen && (
+        <div className="header-safe-top composer-safe-bottom pointer-events-none fixed inset-0 z-[100] flex flex-col [&>*]:pointer-events-auto">
+          {panel}
+        </div>
+      )}
     </>
   );
 });

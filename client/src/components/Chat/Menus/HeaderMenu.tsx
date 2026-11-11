@@ -170,7 +170,7 @@ export default function HeaderMenu({
                   <Button
                     size="icon"
                     variant="header-action"
-                    className={cn('relative size-9 shrink-0', className)}
+                    className={cn('touch:size-11 relative size-9 shrink-0', className)}
                   />
                 }
               >

@@ -58,7 +58,7 @@ function NewChat({
       side="bottom"
       description={localize('com_ui_new_chat')}
       render={
-        <Button asChild variant="ghost" size="icon" className="h-9 w-9 shrink-0">
+        <Button asChild variant="ghost" size="icon" className="touch:size-11 size-9 shrink-0">
           <a
             href="/c/new"
             data-testid="nav-new-chat-fab"

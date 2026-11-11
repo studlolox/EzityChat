@@ -689,7 +689,7 @@ export default function Artifacts() {
           </div>
 
           {isMobile && (
-            <div className="border-border-light bg-surface-primary-alt shrink-0 border-t p-2">
+            <div className="border-border-light bg-surface-primary-alt composer-safe-bottom shrink-0 border-t p-2">
               <Radio
                 fullWidth
                 options={tabOptions}

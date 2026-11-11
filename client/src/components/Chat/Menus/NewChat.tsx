@@ -23,7 +23,7 @@ export default function NewChat({ className }: { className?: string }) {
           asChild
           size="icon"
           variant="header-action"
-          className={cn('size-9 shrink-0', className)}
+          className={cn('touch:size-11 size-9 shrink-0', className)}
         >
           <a
             href="/c/new"
