@@ -306,13 +306,31 @@ describe('resolveDefaultLLMDeliveryPath', () => {
     );
   });
 
-  it('keeps documents on the provider path for a custom endpoint name', () => {
-    /* A custom endpoint is usually OpenAI- or Anthropic-compatible, and both carry
-     * documents, so judging capability from a name we cannot identify would downgrade
-     * something the real provider delivers. */
+  it('downgrades documents to text for a custom endpoint without explicit opt-in', () => {
+    /* Custom endpoints speak OpenAI-compatible APIs (like LM Studio, vLLM, etc.)
+     * which do not carry OpenAI file parts by default. Unless explicitly configured,
+     * PDF documents must downgrade to text extraction rather than failing upstream. */
     expect(resolveDefaultLLMDeliveryPath('application/pdf', undefined, undefined, 'MyOpenAI')).toBe(
-      'provider',
+      'text',
     );
+    expect(
+      resolveDefaultLLMDeliveryPath('application/pdf', undefined, undefined, 'Ezity Gateway'),
+    ).toBe('text');
+  });
+
+  it('keeps documents on provider path when custom endpoint explicitly opts in via supportedMimeTypes', () => {
+    const explicit = [/^application\/pdf$/];
+    expect(
+      resolveDefaultLLMDeliveryPath(
+        'application/pdf',
+        undefined,
+        undefined,
+        'Ezity Gateway',
+        false,
+        undefined,
+        explicit,
+      ),
+    ).toBe('provider');
   });
 
   it('downgrades media for a custom endpoint name', () => {

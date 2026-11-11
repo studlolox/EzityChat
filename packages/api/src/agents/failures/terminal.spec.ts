@@ -80,6 +80,46 @@ describe('terminal agent-run error logging', () => {
     );
   });
 
+  it('preserves upstream 400 rejection status from error cause rather than masking as empty response', () => {
+    const observer = createTerminalRunErrorObserver({
+      logger: { error: jest.fn() },
+      source: '[Agent API]',
+      protectionEnabled: false,
+    });
+    const httpRejection = Object.assign(new Error('400 Bad Request: unrecognized file part'), {
+      status: 400,
+    });
+    // Stream terminates after 400 rejection with an empty response error wrapping the cause
+    const emptyResponseWrapper = new Error('The model provider returned an empty response.', {
+      cause: httpRejection,
+    });
+
+    const userFacing = observer.getUserFacingError(emptyResponseWrapper, () => 'fallback');
+    expect(userFacing).toBe(
+      'The model provider could not complete this request.\n' +
+        JSON.stringify({
+          type: 'upstream_model_error',
+          status: 400,
+          message: '400 Bad Request: unrecognized file part',
+        }),
+    );
+  });
+
+  it('keeps a genuinely empty successful response distinct from an upstream rejection', () => {
+    const observer = createTerminalRunErrorObserver({
+      logger: { error: jest.fn() },
+      source: '[Agent API]',
+      protectionEnabled: false,
+    });
+    const realEmptyResponse = new Error('The model provider returned an empty response.');
+
+    const userFacing = observer.getUserFacingError(
+      realEmptyResponse,
+      () => 'The model provider returned an empty response.',
+    );
+    expect(userFacing).toBe('The model provider returned an empty response.');
+  });
+
   /** A provider error rethrown without its own text: the terminal error carries the wording. */
   it('falls back to the terminal error wording when the tracked failure has none', () => {
     const observer = createTerminalRunErrorObserver({

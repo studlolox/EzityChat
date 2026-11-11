@@ -26,7 +26,10 @@ export function getSafeErrorMetadata(error: unknown): SafeErrorMetadata {
   const response = readProperty(error, 'response');
   const responseStatus =
     response != null && typeof response === 'object' ? readProperty(response, 'status') : undefined;
-  const statusCandidate = directStatus ?? responseStatus;
+  const cause = readProperty(error, 'cause');
+  const causeStatus =
+    cause != null && typeof cause === 'object' ? getSafeErrorMetadata(cause).status : undefined;
+  const statusCandidate = directStatus ?? responseStatus ?? causeStatus;
   const status =
     typeof statusCandidate === 'number' &&
     Number.isInteger(statusCandidate) &&

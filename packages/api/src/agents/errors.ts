@@ -260,7 +260,7 @@ const GRAPH_RECURSION_LIMIT_CODE = 'GRAPH_RECURSION_LIMIT';
 /** Bounded `cause` walk: a graph error may be rethrown wrapped by an outer node. */
 const MAX_CAUSE_DEPTH = 4;
 
-function readErrorProperty(error: object, property: PropertyKey): unknown {
+export function readErrorProperty(error: object, property: PropertyKey): unknown {
   try {
     return Reflect.get(error, property);
   } catch {

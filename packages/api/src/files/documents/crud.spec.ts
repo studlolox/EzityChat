@@ -3,6 +3,32 @@ import * as fs from 'fs';
 import JSZip from 'jszip';
 import { parseDocument } from './crud';
 
+jest.mock('pdfjs-dist/legacy/build/pdf.mjs', () => ({
+  getDocument: jest.fn().mockImplementation(({ data }: { data: Uint8Array }) => {
+    const str = Buffer.from(data).toString('utf8');
+    if (str.includes('test-scanned')) {
+      return {
+        promise: Promise.resolve({
+          numPages: 1,
+          getPage: jest.fn().mockResolvedValue({
+            getTextContent: jest.fn().mockResolvedValue({ items: [] }),
+          }),
+        }),
+      };
+    }
+    return {
+      promise: Promise.resolve({
+        numPages: 1,
+        getPage: jest.fn().mockResolvedValue({
+          getTextContent: jest.fn().mockResolvedValue({
+            items: [{ str: 'Hello World' }],
+          }),
+        }),
+      }),
+    };
+  }),
+}));
+
 describe('Document Parser', () => {
   test('parseDocument() parses text from docx', async () => {
     const file = {
@@ -236,5 +262,78 @@ describe('Document Parser', () => {
     const { read, utils } = await import('xlsx');
     expect(typeof read).toBe('function');
     expect(typeof utils?.sheet_to_csv).toBe('function');
+  });
+
+  test('parseDocument() parses PDF with page provenance', async () => {
+    const pdfString = `%PDF-1.4
+1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
+2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
+3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >> endobj
+4 0 obj << /Length 44 >> stream
+BT /F1 24 Tf 100 700 Td (Hello World) Tj ET
+endstream endobj
+5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000227 00000 n 
+0000000320 00000 n 
+trailer << /Size 6 /Root 1 0 R >>
+startxref
+393
+%%EOF`;
+    const tmpPdf = path.join(__dirname, 'test-provenance.pdf');
+    await fs.promises.writeFile(tmpPdf, Buffer.from(pdfString));
+    try {
+      const file = {
+        originalname: 'test-provenance.pdf',
+        path: tmpPdf,
+        mimetype: 'application/pdf',
+      } as Express.Multer.File;
+
+      const result = await parseDocument({ file });
+      expect(result.text).toContain('--- Page 1 ---');
+      expect(result.text).toContain('Hello World');
+    } finally {
+      await fs.promises.unlink(tmpPdf).catch(() => {});
+    }
+  });
+
+  test('parseDocument() detects image-only / scanned PDF without extractable text', async () => {
+    const pdfString = `%PDF-1.4
+% test-scanned
+1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
+2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
+3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >> endobj
+4 0 obj << /Length 0 >> stream
+endstream endobj
+xref
+0 5
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000213 00000 n 
+trailer << /Size 5 /Root 1 0 R >>
+startxref
+263
+%%EOF`;
+    const tmpPdf = path.join(__dirname, 'test-scanned.pdf');
+    await fs.promises.writeFile(tmpPdf, Buffer.from(pdfString));
+    try {
+      const file = {
+        originalname: 'test-scanned.pdf',
+        path: tmpPdf,
+        mimetype: 'application/pdf',
+      } as Express.Multer.File;
+
+      const result = await parseDocument({ file });
+      expect(result.text).toBe('[Image-only / Scanned PDF (1 pages). No extractable text found.]');
+    } finally {
+      await fs.promises.unlink(tmpPdf).catch(() => {});
+    }
   });
 });

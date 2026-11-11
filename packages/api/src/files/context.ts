@@ -1,9 +1,75 @@
+import path from 'path';
+import * as fs from 'fs';
 import { logger } from '@librechat/data-schemas';
-import { FileSources, mergeFileConfig } from 'librechat-data-provider';
+import {
+  FileSources,
+  mergeFileConfig,
+  isNativelyReadableText,
+  documentParserMimeTypes,
+} from 'librechat-data-provider';
 import type { TFile } from 'librechat-data-provider';
 import type { TokenCountFn } from '~/utils/text';
 import type { ServerRequest } from '~/types';
 import { processTextWithTokenLimit } from '~/utils/text';
+import { parseDocument } from './documents/crud';
+import { readFileAsString } from '~/utils';
+
+/**
+ * On-demand text recovery for historical attachments or turns where text delivery
+ * was selected but pre-extracted text was not populated.
+ */
+async function recoverAttachmentText(
+  file: { filepath?: string; filename?: string; type?: string },
+  req?: ServerRequest,
+): Promise<string | undefined> {
+  if (!file.filepath) {
+    return undefined;
+  }
+
+  let resolvedPath = file.filepath;
+  if (!fs.existsSync(resolvedPath)) {
+    const candidate = path.resolve(
+      process.env.UPLOADS_PATH || './uploads',
+      file.filepath.replace(/^[/\\]+/, ''),
+    );
+    if (fs.existsSync(candidate)) {
+      resolvedPath = candidate;
+    } else {
+      return undefined;
+    }
+  }
+
+  const mimeType = file.type ?? '';
+  try {
+    if (
+      mimeType === 'application/pdf' ||
+      documentParserMimeTypes.some((pattern) => pattern.test(mimeType))
+    ) {
+      const parsed = await parseDocument({
+        file: {
+          path: resolvedPath,
+          originalname: file.filename,
+          mimetype: mimeType,
+          size: (await fs.promises.stat(resolvedPath)).size,
+        } as Express.Multer.File,
+        req,
+      });
+      return parsed.text;
+    }
+
+    if (isNativelyReadableText(mimeType) || mimeType.startsWith('text/')) {
+      const { content } = await readFileAsString(resolvedPath);
+      return content;
+    }
+  } catch (err) {
+    logger.warn(
+      `[extractFileContext] On-demand text extraction failed for "${file.filename}":`,
+      err,
+    );
+  }
+
+  return undefined;
+}
 
 /**
  * Stand-in text for a user turn that carries attachments but no typed message.
@@ -71,9 +137,16 @@ export async function extractFileContext({
     }
 
     const hasTextDelivery = file.llmDeliveryPath === 'text' || source === FileSources.text;
-    if (hasTextDelivery && file.text) {
+    let textToDeliver = file.text;
+    if (hasTextDelivery && !textToDeliver && (file as { filepath?: string }).filepath) {
+      textToDeliver = await recoverAttachmentText(
+        file as { filepath?: string; filename?: string; type?: string },
+        req,
+      );
+    }
+    if (hasTextDelivery && textToDeliver) {
       const { text: limitedText, wasTruncated } = await processTextWithTokenLimit({
-        text: file.text,
+        text: textToDeliver,
         tokenLimit: fileTokenLimit,
         tokenCountFn,
       });

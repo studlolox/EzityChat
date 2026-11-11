@@ -77,7 +77,7 @@ function getParserForMimeType(
   return undefined;
 }
 
-/** Parses PDF, returns text inside. */
+/** Parses PDF, returns text inside with page provenance. */
 async function pdfToText(file: Express.Multer.File): Promise<string> {
   // Imported inline so that Jest can test other routes without failing due to loading ESM
   const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs');
@@ -86,17 +86,28 @@ async function pdfToText(file: Express.Multer.File): Promise<string> {
   const pdf = await getDocument({ data }).promise;
 
   let fullText = '';
+  let textPageCount = 0;
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const textContent = await page.getTextContent();
     const pageText = textContent.items
       .filter((item): item is TextItem => !('type' in item))
       .map((item) => item.str)
-      .join(' ');
-    fullText += pageText + '\n';
+      .join(' ')
+      .trim();
+    if (pageText.length > 0) {
+      textPageCount++;
+      fullText += `--- Page ${i} ---\n${pageText}\n\n`;
+    } else {
+      fullText += `--- Page ${i} ---\n[Visual / Scanned Page - No extractable text]\n\n`;
+    }
   }
 
-  return fullText;
+  if (textPageCount === 0) {
+    return `[Image-only / Scanned PDF (${pdf.numPages} pages). No extractable text found.]`;
+  }
+
+  return fullText.trim();
 }
 
 /** Parses Word document, returns text inside. */

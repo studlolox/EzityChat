@@ -9,6 +9,7 @@ import {
   getModelStreamFailure,
   resolveModelStreamError,
   getProviderErrorMessage,
+  readErrorProperty,
 } from '../errors';
 import { getSafeErrorText, getSafeErrorMetadata, isOwnedAbortError } from '../../utils/errors';
 import { hasModelBoundContentProtection } from '../../middleware/modelBoundContent';
@@ -108,7 +109,9 @@ export function createTerminalRunErrorObserver({
   return Object.freeze({
     modelCallback: modelErrorTracker.callback,
     getUserFacingError(error: unknown, fallback: () => string) {
-      const upstreamModelError = modelErrorTracker.getUpstreamModelError(error);
+      const upstreamModelError =
+        modelErrorTracker.getUpstreamModelError(error) ??
+        (getSafeErrorMetadata(error).status != null ? error : null);
       if (upstreamModelError == null) {
         return fallback();
       }
@@ -131,10 +134,26 @@ export function createTerminalRunErrorObserver({
       /** Unclassified: the provider's own explanation is the only account of what happened, and a
        *  rejection from a gateway or proxy carries it as the whole point of the 400. The status
        *  headlines it either way, so a deployment withholding provider text loses no taxonomy. */
+      const cause =
+        upstreamModelError != null && typeof upstreamModelError === 'object'
+          ? readErrorProperty(upstreamModelError, 'cause')
+          : undefined;
+      const rawMsg =
+        upstreamModelError != null && typeof upstreamModelError === 'object'
+          ? readErrorProperty(upstreamModelError, 'message')
+          : undefined;
+      const hasEmptyResponseWrapper =
+        typeof rawMsg === 'string' &&
+        (rawMsg.includes('empty response') || rawMsg.includes('EMPTY_PROVIDER_RESPONSE'));
+      const providerTarget =
+        cause != null && typeof cause === 'object' && hasEmptyResponseWrapper
+          ? cause
+          : upstreamModelError;
       const providerMessage =
         protectionEnabled !== false
           ? undefined
-          : (getProviderErrorMessage(upstreamModelError, maxProviderErrorChars) ??
+          : (getProviderErrorMessage(providerTarget, maxProviderErrorChars) ??
+            getProviderErrorMessage(upstreamModelError, maxProviderErrorChars) ??
             getProviderErrorMessage(error, maxProviderErrorChars));
       return `${UPSTREAM_MODEL_ERROR_FALLBACK}\n${JSON.stringify({
         type: ErrorTypes.UPSTREAM_MODEL_ERROR,
@@ -147,7 +166,9 @@ export function createTerminalRunErrorObserver({
         return;
       }
 
-      const upstreamModelError = modelErrorTracker.getUpstreamModelError(error);
+      const upstreamModelError =
+        modelErrorTracker.getUpstreamModelError(error) ??
+        (getSafeErrorMetadata(error).status != null ? error : null);
       if (upstreamModelError == null) {
         logger.error(genericMessage, getSafeErrorMetadata(error));
         return;
