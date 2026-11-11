@@ -617,9 +617,16 @@ p > small {
   direction: ltr;
   unicode-bidi: isolate;
 }
-.katex,
+.katex {
+  direction: ltr;
+}
 .katex-display {
   direction: ltr;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
 }
 .prose :where(a code):not(:where([class~='not-prose'] *)) {
   color: inherit;

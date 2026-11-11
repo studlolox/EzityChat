@@ -90,7 +90,7 @@ type ButtonVariantOptions =
  * `hover-button` is the marker the app's narrow-screen stylesheet keeps visible.
  */
 const messageHoverClasses =
-  'hover-button size-auto rounded-lg p-1.5 text-text-secondary-alt hover:bg-surface-hover hover:active:bg-surface-pressed hover:text-text-primary focus-visible:ring-text-primary group-has-[[data-hover-active]]:opacity-100 data-[hover-active]:bg-surface-hover data-[hover-active]:text-text-primary';
+  'hover-button size-auto rounded-lg p-1.5 touch:size-theme-control-touch touch:p-0 text-text-secondary-alt hover:bg-surface-hover hover:active:bg-surface-pressed hover:text-text-primary focus-visible:ring-text-primary group-has-[[data-hover-active]]:opacity-100 data-[hover-active]:bg-surface-hover data-[hover-active]:text-text-primary';
 
 const buttonVariantRecipe = cva(
   [
@@ -145,7 +145,7 @@ const buttonVariantRecipe = cva(
           'text-text-secondary hover:bg-surface-hover hover:active:bg-surface-pressed hover:text-text-primary',
         /** An icon action under a message: a small padded square that rests in the alt secondary ink. */
         'message-action':
-          'size-auto rounded-lg p-1.5 text-text-secondary-alt hover:bg-surface-hover hover:active:bg-surface-pressed hover:text-text-primary',
+          'size-auto rounded-lg p-1.5 touch:size-theme-control-touch touch:p-0 text-text-secondary-alt hover:bg-surface-hover hover:active:bg-surface-pressed hover:text-text-primary',
         /** A message toolbar action that stays visible, such as the latest message's. */
         'message-hover': messageHoverClasses,
         /** A message toolbar action that fades in with its row; see `revealOnRowHoverClasses`. */

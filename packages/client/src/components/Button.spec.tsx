@@ -59,6 +59,12 @@ describe('Button', () => {
   it('offers the message, link, carousel and toolbar roles as variants', () => {
     expect(cn(buttonVariants({ variant: 'message-action' }))).toContain('text-text-secondary-alt');
     expect(cn(buttonVariants({ variant: 'message-action' }))).toContain('p-1.5');
+    expect(cn(buttonVariants({ variant: 'message-action' }))).toContain(
+      'touch:size-theme-control-touch',
+    );
+    expect(cn(buttonVariants({ variant: 'message-hover' }))).toContain(
+      'touch:size-theme-control-touch',
+    );
     expect(cn(buttonVariants({ variant: 'inline-link' }))).toContain('hover:bg-transparent');
     expect(cn(buttonVariants({ variant: 'inline-link' }))).toContain('focus-visible:ring-offset-0');
     expect(cn(buttonVariants({ variant: 'carousel-nav' }))).toContain('bg-surface-fixed');

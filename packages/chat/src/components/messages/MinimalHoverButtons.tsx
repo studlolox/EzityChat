@@ -24,7 +24,7 @@ export default function MinimalHoverButtons({
   const { copyToClipboard, canCopy } = useMessageCopy({ message, searchResults, variant });
 
   return (
-    <div className="text-text-tertiary visible mt-1 flex justify-center gap-1 self-end lg:justify-start">
+    <div className="text-text-tertiary touch:gap-2 visible mt-1 flex justify-center gap-1 self-end lg:justify-start">
       <TooltipAnchor
         description={
           isCopied ? localize('com_ui_copied_to_clipboard') : localize('com_ui_copy_to_clipboard')

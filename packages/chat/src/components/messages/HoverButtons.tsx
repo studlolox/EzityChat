@@ -190,7 +190,7 @@ const HoverButtons = ({
   const speechText = getSpeechText(message);
 
   return (
-    <div className="group visible flex justify-center gap-0.5 self-end focus-within:outline-hidden lg:justify-start">
+    <div className="group touch:gap-1.5 visible flex justify-center gap-0.5 self-end focus-within:outline-hidden lg:justify-start">
       {/* Text to Speech */}
       {!error && !isActiveStreamingMessage && speechText.length > 0 && (
         <MessageAudioSlot

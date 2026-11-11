@@ -101,7 +101,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   return (
     <div
       ref={containerRef}
-      className="border-border-inset relative w-full overflow-hidden rounded-xl border text-xs"
+      className="border-border-inset relative w-full min-w-0 overflow-hidden rounded-xl border text-xs"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onFocus={handleFocus}
@@ -117,7 +117,13 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
           allowExecution={allowExecution}
         />
       </div>
-      <div dir="ltr" className={cn(classProp, 'bg-surface-code-body overflow-y-auto p-4')}>
+      <div
+        dir="ltr"
+        className={cn(
+          classProp,
+          'bg-surface-code-body overflow-x-auto overflow-y-auto overscroll-x-contain p-4',
+        )}
+      >
         <code
           ref={codeRef}
           className={cn(

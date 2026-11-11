@@ -297,7 +297,7 @@ export const table: React.ElementType = memo(function MarkdownTable({
 }: TTableProps) {
   const dir = node != null ? (nodeDirection(node) ?? undefined) : undefined;
   return (
-    <div dir={dir} className="markdown-table-wrapper w-full max-w-full">
+    <div dir={dir} className="markdown-table-wrapper w-full max-w-full min-w-0">
       <table>{children}</table>
     </div>
   );
