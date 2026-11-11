@@ -3886,10 +3886,11 @@
   "com_ui_library_deselect_all": "Deselect all",
   "com_ui_library_selected_count": "{{count}} selected",
   "com_ui_library_download_zip": "Download (ZIP)",
-  "com_ui_library_download_selected": "Download selected",
-  "com_ui_library_delete_selected": "Delete selected",
   "com_ui_library_delete_confirm_title": "Delete {{count}} items?",
   "com_ui_library_delete_single_confirm_title": "Delete this item?",
   "com_ui_library_delete_confirm_desc": "This action cannot be undone. The selected files will be permanently removed.",
-  "com_ui_library_options": "Library options"
+  "com_ui_library_options": "Library options",
+  "com_ui_library_pdf": "PDF",
+  "com_ui_library_code": "Code",
+  "com_ui_library_board": "Board"
 }

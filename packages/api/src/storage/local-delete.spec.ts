@@ -85,4 +85,26 @@ describe('local file deletion', () => {
     expect(deleteRagFile).not.toHaveBeenCalled();
     expect(fs.existsSync(path.join(root, 'uploads', 'user-1', 'retained.txt'))).toBe(true);
   });
+
+  it('removes image file and its cached thumbnail when deleting an image', async () => {
+    const imagesDir = path.join(root, 'public', 'images', 'user-1');
+    const thumbDir = path.join(root, 'public', 'images', 'thumbnails', 'user-1');
+    fs.mkdirSync(imagesDir, { recursive: true });
+    fs.mkdirSync(thumbDir, { recursive: true });
+
+    const imageName = 'photo.png';
+    const thumbName = 'photo_w480.webp';
+    fs.writeFileSync(path.join(imagesDir, imageName), 'image-bytes');
+    fs.writeFileSync(path.join(thumbDir, thumbName), 'thumb-bytes');
+
+    const file = {
+      file_id: 'img-1',
+      filepath: `/images/user-1/${imageName}`,
+      user: 'user-1',
+    };
+
+    await remove(req, file);
+    expect(fs.existsSync(path.join(imagesDir, imageName))).toBe(false);
+    expect(fs.existsSync(path.join(thumbDir, thumbName))).toBe(false);
+  });
 });

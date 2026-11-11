@@ -20,7 +20,12 @@ import {
   canvasModeAtom,
   activeBoardIdAtom,
 } from '~/components/Canvas/state';
-import { downloadLibraryItemsAsZip, toAbsoluteFilePath, triggerDownload } from '~/utils';
+import {
+  deletePreview,
+  downloadLibraryItemsAsZip,
+  toAbsoluteFilePath,
+  triggerDownload,
+} from '~/utils';
 import FilePreviewDialog from '~/components/Chat/Messages/Content/FilePreviewDialog';
 import { useDeleteFilesMutation } from '~/data-provider';
 import { SidePanelGroup } from '~/components/SidePanel';
@@ -174,6 +179,13 @@ export default function LibraryView() {
       if (filesToDelete.length > 0) {
         await deleteFilesMutation.mutateAsync({ files: filesToDelete });
       }
+
+      deleteDialog.items.forEach((item) => {
+        deletePreview(item.id);
+        if (item.file?.file_id) {
+          deletePreview(item.file.file_id);
+        }
+      });
 
       const deletedIds = new Set(deleteDialog.items.map((i) => i.id));
       setSelectedItemIds((prev) => {

@@ -1,4 +1,4 @@
-import React, { useId, useState } from 'react';
+import React, { useEffect, useId, useState } from 'react';
 import * as Ariakit from '@ariakit/react';
 import { DropdownPopup } from '@librechat/client';
 import {
@@ -16,9 +16,10 @@ import {
 } from 'lucide-react';
 import type { UnifiedLibraryItem } from './types';
 import type { MenuItemProps } from '~/common';
+import { cn, formatDate, getOrGeneratePdfThumbnail } from '~/utils';
+import { LiveDocThumbnail } from './LiveDocThumbnail';
+import { MindmapThumbnail } from './MindmapThumbnail';
 import { useLocalize } from '~/hooks';
-import { formatDate } from '~/utils';
-import { cn } from '~/utils';
 
 interface LibraryCardProps {
   item: UnifiedLibraryItem;
@@ -77,6 +78,62 @@ function getBadgeText(item: UnifiedLibraryItem): string {
   return (item.file?.type?.split('/')[1] || item.category).toUpperCase();
 }
 
+function PdfCardThumbnail({ item }: { item: UnifiedLibraryItem }) {
+  const localize = useLocalize();
+  const [thumbUrl, setThumbUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const url =
+      item.previewUrl || (item.file?.filepath ? `/api/files/${item.file.filepath}` : null);
+    if (!url) return;
+
+    getOrGeneratePdfThumbnail(item.id, url)
+      .then((dataUrl) => {
+        if (isMounted && dataUrl) {
+          setThumbUrl(dataUrl);
+        }
+      })
+      .catch(() => {
+        // Fall back to document icon
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [item.id, item.previewUrl, item.file?.filepath]);
+
+  if (thumbUrl) {
+    return (
+      <div className="bg-surface-tertiary relative h-44 w-full shrink-0 overflow-hidden">
+        <img
+          src={thumbUrl}
+          alt={item.title}
+          loading="lazy"
+          className="size-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+        />
+        <div className="bg-surface-primary/90 text-text-secondary text-3xs absolute right-2 bottom-2 flex items-center gap-1 rounded px-1.5 py-0.5 font-semibold shadow-xs backdrop-blur-xs">
+          <span className="bg-status-error size-1.5 rounded-full" />
+          {localize('com_ui_library_pdf')}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-surface-secondary/50 border-border-inset flex items-center justify-between border-b px-4 py-3">
+      <div className="flex items-center gap-2.5">
+        <div className="bg-surface-tertiary ring-border-chrome flex size-8 shrink-0 items-center justify-center rounded-lg ring-1">
+          {getDocumentIcon(item)}
+        </div>
+        <span className="border-border-chrome bg-surface-card text-text-secondary text-3xs rounded-md border px-2 py-0.5 font-mono font-medium tracking-wider">
+          {localize('com_ui_library_pdf')}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function LibraryCard({
   item,
   onOpenCanvasDoc,
@@ -94,6 +151,16 @@ export default function LibraryCard({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const isImage = item.kind === 'image' && !!item.previewUrl;
+  const isPdf =
+    item.kind === 'file' &&
+    (item.file?.type?.includes('pdf') || item.title.toLowerCase().endsWith('.pdf'));
+  const isMindmap = item.kind === 'canvas_board';
+  const isLiveDoc =
+    item.kind === 'canvas_doc' ||
+    (item.kind === 'file' &&
+      /\.(ts|tsx|js|jsx|py|json|sql|sh|html|css|cpp|c|go|rs|rb|php|yaml|yml|md|txt)$/i.test(
+        item.title,
+      ));
   const thumbnailUrl = isImage ? getThumbnailUrl(item.previewUrl) : undefined;
 
   const handleCardClick = () => {
@@ -184,8 +251,8 @@ export default function LibraryCard({
         </button>
       )}
 
-      {/* Image Thumbnail: Fills Edge-to-Edge */}
-      {isImage ? (
+      {/* Visual Header / Thumbnail */}
+      {isImage && (
         <div className="bg-surface-tertiary relative h-44 w-full shrink-0 overflow-hidden">
           <img
             src={thumbnailUrl}
@@ -195,8 +262,19 @@ export default function LibraryCard({
             className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         </div>
-      ) : (
-        /* Full-Height Document Card Header */
+      )}
+      {!isImage && isPdf && <PdfCardThumbnail item={item} />}
+      {!isImage && !isPdf && isMindmap && (
+        <div className="relative h-44 w-full shrink-0 overflow-hidden">
+          <MindmapThumbnail item={item} />
+        </div>
+      )}
+      {!isImage && !isPdf && !isMindmap && isLiveDoc && (
+        <div className="relative h-44 w-full shrink-0 overflow-hidden">
+          <LiveDocThumbnail item={item} />
+        </div>
+      )}
+      {!isImage && !isPdf && !isMindmap && !isLiveDoc && (
         <div className="bg-surface-secondary/50 border-border-inset flex items-center justify-between border-b px-4 py-3">
           <div className="flex items-center gap-2.5">
             <div className="bg-surface-tertiary ring-border-chrome flex size-8 shrink-0 items-center justify-center rounded-lg ring-1">

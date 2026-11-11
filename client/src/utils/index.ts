@@ -45,6 +45,7 @@ export * from './resources';
 export * from './configHtml';
 export * from './downloadFile';
 export * from './zipDownload';
+export * from './pdfThumbnail';
 export * from './scaleImage';
 export * from './timestamps';
 export * from './localStorage';

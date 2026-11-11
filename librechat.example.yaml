@@ -1373,6 +1373,26 @@ endpoints:
       modelDisplayLabel: 'Mistral' # Default is "AI" when not set.
 
       # Add additional parameters to the request. Default params will be overwritten.
+
+    # Local Gateway / LM Studio Example
+    # Custom OpenAI-compatible endpoints default to local text extraction for documents
+    # (PDF, DOCX, XLSX), preventing HTTP 400 errors from backends that lack raw document API parts.
+    - name: 'Ezity Gateway'
+      apiKey: '${EZITY_API_KEY:-lm-studio}'
+      baseURL: 'http://ai-gateway:3001/v1'
+      models:
+        default:
+          - 'ezity-ai'
+          - 'ezity-ai-coder'
+        fetch: false
+      titleConvo: true
+      titleModel: 'ezity-ai'
+      modelDisplayLabel: 'Ezity AI'
+      # Optional: If the backend natively supports raw OpenAI document file parts,
+      # you can explicitly opt in:
+      # fileConfig:
+      #   supportedMimeTypes:
+      #     - "application/pdf"
       # addParams:
       # safe_prompt: true # This field is specific to Mistral AI: https://docs.mistral.ai/api/
 
@@ -1548,6 +1568,11 @@ endpoints:
 #     YourCustomEndpointName:
 #       fileLimit: 2
 #       fileSizeLimit: 5
+#       # Custom endpoints automatically extract text from documents (PDF, DOCX, XLSX).
+#       # To override delivery path explicitly for any format:
+#       # defaultLLMDeliveryPath:
+#       #   overrides:
+#       #     application/pdf: "text"
 #   serverFileSizeLimit: 100  # Global server file size limit in MB
 #   avatarSizeLimit: 2  # Limit for user avatar image size in MB
 #   imageGeneration: # Image Gen settings, either percentage or px

@@ -113,3 +113,43 @@ export function createThumbnailHandler({
     }
   };
 }
+
+export interface DeleteThumbnailOptions {
+  imageOutputDir: string;
+  relativePath: string;
+  targetWidth?: number;
+}
+
+/**
+ * Deletes any cached thumbnail matching the relative image path.
+ * Silently ignores ENOENT if thumbnail was never generated.
+ */
+export async function deleteImageThumbnail({
+  imageOutputDir,
+  relativePath,
+  targetWidth = 480,
+}: DeleteThumbnailOptions): Promise<void> {
+  try {
+    const resolvedRoot = path.resolve(imageOutputDir);
+    const thumbnailsRoot = path.join(resolvedRoot, 'thumbnails');
+    // Normalize relativePath (e.g. /images/userId/file.png or /userId/file.png)
+    let cleanRel = relativePath.replace(/^[/\\]+/, '');
+    if (cleanRel.startsWith('images/') || cleanRel.startsWith('images\\')) {
+      cleanRel = cleanRel.replace(/^images[/\\]+/, '');
+    }
+    const parsedRel = path.parse(cleanRel);
+    const thumbDir = path.join(thumbnailsRoot, parsedRel.dir);
+    const thumbFileName = `${parsedRel.name}_w${targetWidth}.webp`;
+    const thumbFullPath = path.join(thumbDir, thumbFileName);
+
+    if (thumbFullPath.startsWith(thumbnailsRoot)) {
+      await fs.promises.unlink(thumbFullPath).catch((err: NodeJS.ErrnoException) => {
+        if (err.code !== 'ENOENT') {
+          throw err;
+        }
+      });
+    }
+  } catch (_err) {
+    // Non-fatal if thumbnail deletion fails or file doesn't exist
+  }
+}

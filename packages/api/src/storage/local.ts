@@ -4,11 +4,13 @@ import { EModelEndpoint } from 'librechat-data-provider';
 import { mkdir, copyFile, rename, unlink, writeFile } from 'fs/promises';
 import type { TFileConfig } from 'librechat-data-provider';
 import type { AppConfig } from '@librechat/data-schemas';
+import { deleteImageThumbnail } from '../images/thumbnail';
 import { stripCacheBust } from './path';
 
 export interface LocalStoragePaths {
   publicPath: string;
   uploads: string;
+  imageOutput?: string;
 }
 
 interface LocalFile {
@@ -90,6 +92,13 @@ export function createLocalFileDeleter({ deleteRagFile, logger }: LocalFileDelet
       throw new Error('Vector deletion was not confirmed');
     }
     await unlinkStoredFile(filePath);
+    if (subfolder === 'images') {
+      const imageOutputDir = req.config.paths.imageOutput ?? path.join(publicPath, 'images');
+      await deleteImageThumbnail({
+        imageOutputDir,
+        relativePath: cleanFilepath,
+      });
+    }
   };
 }
 
