@@ -78,6 +78,7 @@ export default [
       '**/node_modules/**/*',
       'venv/**/*',
       '.devcontainer/**/*',
+      '.agents/**/*',
     ],
   },
   ...fixupConfigRules(
