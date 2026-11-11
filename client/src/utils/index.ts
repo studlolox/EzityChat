@@ -44,6 +44,7 @@ export * from './endpoints';
 export * from './resources';
 export * from './configHtml';
 export * from './downloadFile';
+export * from './zipDownload';
 export * from './scaleImage';
 export * from './timestamps';
 export * from './localStorage';

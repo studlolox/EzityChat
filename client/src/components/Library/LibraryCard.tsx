@@ -1,8 +1,24 @@
-import React from 'react';
-import { FileText, Network, Download, MessageSquare, FileCode, ArrowUpRight } from 'lucide-react';
+import React, { useId, useState } from 'react';
+import * as Ariakit from '@ariakit/react';
+import { DropdownPopup } from '@librechat/client';
+import {
+  CheckSquare,
+  Download,
+  Ellipsis,
+  Eye,
+  FileCode,
+  FileSpreadsheet,
+  FileText,
+  MessageSquare,
+  Network,
+  Square,
+  Trash2,
+} from 'lucide-react';
 import type { UnifiedLibraryItem } from './types';
-import { formatDate, triggerDownload } from '~/utils';
+import type { MenuItemProps } from '~/common';
 import { useLocalize } from '~/hooks';
+import { formatDate } from '~/utils';
+import { cn } from '~/utils';
 
 interface LibraryCardProps {
   item: UnifiedLibraryItem;
@@ -10,29 +26,55 @@ interface LibraryCardProps {
   onOpenCanvasBoard: (boardId: string, conversationId?: string) => void;
   onPreviewFile: (item: UnifiedLibraryItem) => void;
   onNavigateToChat: (conversationId: string) => void;
+  onDownloadItem: (item: UnifiedLibraryItem) => void;
+  onDeleteItem: (item: UnifiedLibraryItem) => void;
+  isSelectMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (item: UnifiedLibraryItem) => void;
 }
 
-function renderCategoryIcon(item: UnifiedLibraryItem) {
+function getDocumentIcon(item: UnifiedLibraryItem) {
   if (item.kind === 'canvas_doc') {
-    return <FileCode className="text-text-secondary size-6" />;
+    return <FileCode className="text-text-primary size-6" />;
   }
   if (item.kind === 'canvas_board') {
-    return <Network className="text-text-secondary size-6" />;
+    return <Network className="text-status-warning size-6" />;
+  }
+  const type = item.file?.type || '';
+  if (type.includes('spreadsheet') || type.includes('excel') || type.includes('csv')) {
+    return <FileSpreadsheet className="text-status-success size-6" />;
+  }
+  if (
+    type.includes('code') ||
+    type.includes('json') ||
+    type.includes('javascript') ||
+    type.includes('typescript')
+  ) {
+    return <FileCode className="text-status-info size-6" />;
   }
   return <FileText className="text-text-secondary size-6" />;
 }
 
-function getCategoryLabel(
-  item: UnifiedLibraryItem,
-  localize: ReturnType<typeof useLocalize>,
-): string {
+function getThumbnailUrl(previewUrl?: string): string | undefined {
+  if (!previewUrl) {
+    return undefined;
+  }
+  const separator = previewUrl.includes('?') ? '&' : '?';
+  return `${previewUrl}${separator}thumb=1`;
+}
+
+function getBadgeText(item: UnifiedLibraryItem): string {
   if (item.kind === 'canvas_doc') {
-    return item.canvasDoc?.language || item.canvasDoc?.docType || 'Canvas';
+    return (item.canvasDoc?.language || item.canvasDoc?.docType || 'CANVAS').toUpperCase();
   }
   if (item.kind === 'canvas_board') {
-    return localize('com_ui_mindmap_badge');
+    return 'MINDMAP';
   }
-  return item.file?.type?.split('/')[1] || item.category;
+  const ext = item.file?.filename?.split('.').pop();
+  if (ext) {
+    return ext.toUpperCase();
+  }
+  return (item.file?.type?.split('/')[1] || item.category).toUpperCase();
 }
 
 export default function LibraryCard({
@@ -41,10 +83,24 @@ export default function LibraryCard({
   onOpenCanvasBoard,
   onPreviewFile,
   onNavigateToChat,
+  onDownloadItem,
+  onDeleteItem,
+  isSelectMode = false,
+  isSelected = false,
+  onToggleSelect,
 }: LibraryCardProps) {
   const localize = useLocalize();
+  const menuId = useId();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const handlePrimaryClick = () => {
+  const isImage = item.kind === 'image' && !!item.previewUrl;
+  const thumbnailUrl = isImage ? getThumbnailUrl(item.previewUrl) : undefined;
+
+  const handleCardClick = () => {
+    if (isSelectMode) {
+      onToggleSelect?.(item);
+      return;
+    }
     if (item.kind === 'canvas_doc' && item.canvasDoc) {
       onOpenCanvasDoc(item.canvasDoc._id, item.conversationId);
     } else if (item.kind === 'canvas_board' && item.canvasBoard) {
@@ -54,87 +110,119 @@ export default function LibraryCard({
     }
   };
 
-  const getActionLabel = () => {
-    if (item.kind === 'canvas_doc') return localize('com_ui_open_in_canvas');
-    if (item.kind === 'canvas_board') return localize('com_ui_view_mindmap');
-    return localize('com_ui_preview_file');
+  const handlePreview = () => {
+    if (item.kind === 'canvas_doc' && item.canvasDoc) {
+      onOpenCanvasDoc(item.canvasDoc._id, item.conversationId);
+    } else if (item.kind === 'canvas_board' && item.canvasBoard) {
+      onOpenCanvasBoard(item.canvasBoard._id, item.conversationId);
+    } else {
+      onPreviewFile(item);
+    }
   };
 
-  const categoryLabel = getCategoryLabel(item, localize);
+  const menuItems: MenuItemProps[] = [
+    {
+      id: `preview-${item.id}`,
+      label: localize('com_ui_preview'),
+      icon: <Eye className="size-4" />,
+      onClick: (e) => {
+        e?.stopPropagation?.();
+        handlePreview();
+        setIsMenuOpen(false);
+      },
+    },
+    {
+      id: `download-${item.id}`,
+      label: localize('com_ui_download'),
+      icon: <Download className="size-4" />,
+      onClick: (e) => {
+        e?.stopPropagation?.();
+        onDownloadItem(item);
+        setIsMenuOpen(false);
+      },
+    },
+    { separate: true },
+    {
+      id: `delete-${item.id}`,
+      label: localize('com_ui_delete'),
+      icon: <Trash2 className="text-text-destructive size-4" />,
+      className: 'text-text-destructive focus:text-text-destructive',
+      onClick: (e) => {
+        e?.stopPropagation?.();
+        onDeleteItem(item);
+        setIsMenuOpen(false);
+      },
+    },
+  ];
 
   return (
-    <article className="group rounded-theme-surface bg-surface-card relative flex h-full min-h-[17.5rem] min-w-0 cursor-pointer flex-col p-5">
-      {/* Background & Hover Surface matching AgentCard */}
-      <div
-        aria-hidden="true"
-        className="rounded-theme-surface border-border-light bg-surface-card group-hover:border-border-medium group-hover:bg-surface-card-hover pointer-events-none absolute inset-0 z-0 border transition-colors duration-150"
-      />
+    <article
+      onClick={handleCardClick}
+      className={cn(
+        'group rounded-theme-surface bg-surface-card relative flex h-full min-h-[17.5rem] min-w-0 cursor-pointer flex-col overflow-hidden border transition-all duration-150',
+        isSelected
+          ? 'border-border-chrome-heavy ring-border-chrome-heavy ring-2'
+          : 'border-border-light hover:border-border-medium hover:bg-surface-card-hover',
+      )}
+    >
+      {/* Selection Checkbox (Visible in select mode or when hovered) */}
+      {isSelectMode && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleSelect?.(item);
+          }}
+          className="bg-surface-secondary/90 hover:bg-surface-tertiary border-border-chrome absolute start-3 top-3 z-30 flex size-7 cursor-pointer items-center justify-center rounded-lg border shadow-xs backdrop-blur-xs transition-colors"
+          aria-label={localize('com_ui_library_select')}
+        >
+          {isSelected ? (
+            <CheckSquare className="text-text-primary size-4" />
+          ) : (
+            <Square className="text-text-tertiary size-4" />
+          )}
+        </button>
+      )}
 
-      {/* Surface Click Button for keyboard accessibility */}
-      <button
-        type="button"
-        onClick={handlePrimaryClick}
-        className="rounded-theme-surface focus-visible:ring-text-primary absolute inset-0 z-10 cursor-pointer border-0 bg-transparent p-0 text-start focus-visible:ring-2 focus-visible:outline-hidden focus-visible:ring-inset"
-        aria-label={item.title}
-      />
-
-      {/* Content Layer */}
-      <div className="relative z-20 flex min-h-0 flex-1 flex-col">
-        {/* Top Header: Icon & Category Badge */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="bg-surface-tertiary ring-border-chrome group-hover:ring-border-chrome-medium flex size-12 shrink-0 items-center justify-center rounded-2xl ring-1 transition-colors duration-150">
-            {renderCategoryIcon(item)}
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <span className="border-border-chrome bg-surface-secondary text-text-secondary text-3xs group-hover:border-border-medium rounded-full border px-2.5 py-0.5 font-mono font-medium tracking-wide uppercase transition-colors duration-150">
-              {categoryLabel}
+      {/* Image Thumbnail: Fills Edge-to-Edge */}
+      {isImage ? (
+        <div className="bg-surface-tertiary relative h-44 w-full shrink-0 overflow-hidden">
+          <img
+            src={thumbnailUrl}
+            alt={item.title}
+            loading="lazy"
+            decoding="async"
+            className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        </div>
+      ) : (
+        /* Full-Height Document Card Header */
+        <div className="bg-surface-secondary/50 border-border-inset flex items-center justify-between border-b px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <div className="bg-surface-tertiary ring-border-chrome flex size-8 shrink-0 items-center justify-center rounded-lg ring-1">
+              {getDocumentIcon(item)}
+            </div>
+            <span className="border-border-chrome bg-surface-card text-text-secondary text-3xs rounded-md border px-2 py-0.5 font-mono font-medium tracking-wider">
+              {getBadgeText(item)}
             </span>
-
-            {/* Download button if physical file exists */}
-            {item.file && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const target = item.file?.filepath || item.file?.file_id;
-                  if (target) {
-                    triggerDownload(target, item.file?.filename || item.title);
-                  }
-                }}
-                title={localize('com_ui_download_file')}
-                className="hover:bg-surface-tertiary text-text-secondary hover:text-text-primary pointer-events-auto rounded-lg p-1 transition-colors"
-              >
-                <Download className="size-3.5" />
-              </button>
-            )}
           </div>
         </div>
+      )}
 
-        {/* Image Preview Banner (if image item) */}
-        {item.kind === 'image' && item.previewUrl && (
-          <div className="border-border-light/60 bg-surface-tertiary/40 mt-3 aspect-video w-full overflow-hidden rounded-xl border">
-            <img
-              src={item.previewUrl}
-              alt={item.title}
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-              loading="lazy"
-            />
-          </div>
-        )}
-
+      {/* Card Body */}
+      <div className="flex min-h-0 flex-1 flex-col p-4">
         {/* Title */}
-        <h2 className="text-text-primary mt-4 line-clamp-2 text-base leading-snug font-semibold break-words">
+        <h2 className="text-text-primary line-clamp-2 text-sm leading-snug font-semibold break-words">
           {item.title}
         </h2>
 
-        {/* Subtitle / Details */}
+        {/* Subtitle / Metadata */}
         <p className="text-text-secondary mt-1.5 mb-3 line-clamp-2 text-xs leading-relaxed break-words">
           {item.subtitle}
         </p>
 
-        {/* Footer matching AgentCard */}
-        <footer className="border-border-inset relative mt-auto flex min-w-0 items-center justify-between gap-2 border-t pt-4">
+        {/* Footer */}
+        <footer className="border-border-inset relative mt-auto flex min-w-0 items-center justify-between gap-2 border-t pt-3">
           <div className="min-w-0">
             {item.conversationId ? (
               <button
@@ -146,22 +234,40 @@ export default function LibraryCard({
                   }
                 }}
                 title={localize('com_ui_library_from_chat')}
-                className="hover:bg-surface-tertiary text-text-secondary hover:text-text-primary pointer-events-auto inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs transition-colors"
+                className="hover:bg-surface-tertiary text-text-secondary hover:text-text-primary inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs transition-colors"
               >
                 <MessageSquare className="size-3 shrink-0" />
                 <span className="truncate">{localize('com_ui_library_from_chat')}</span>
               </button>
             ) : (
-              <span className="text-text-tertiary text-xs">
+              <span className="text-text-tertiary text-2xs">
                 {item.updatedAt ? formatDate(item.updatedAt) : ''}
               </span>
             )}
           </div>
 
-          <span className="text-text-primary ms-auto flex shrink-0 items-center gap-1 text-xs font-medium">
-            <span>{getActionLabel()}</span>
-            <ArrowUpRight className="size-3.5" aria-hidden="true" />
-          </span>
+          {/* Bottom-right More Actions Dropdown */}
+          <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+            <DropdownPopup
+              portal={true}
+              menuId={menuId}
+              focusLoop={true}
+              unmountOnHide={true}
+              isOpen={isMenuOpen}
+              setIsOpen={setIsMenuOpen}
+              items={menuItems}
+              trigger={
+                <Ariakit.MenuButton
+                  id={`library-item-menu-${item.id}`}
+                  aria-label={localize('com_ui_actions')}
+                  aria-expanded={isMenuOpen}
+                  className="hover:bg-surface-tertiary text-text-secondary hover:text-text-primary focus-visible:ring-text-primary flex size-7 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-hidden"
+                >
+                  <Ellipsis className="size-4" aria-hidden="true" />
+                </Ariakit.MenuButton>
+              }
+            />
+          </div>
         </footer>
       </div>
     </article>

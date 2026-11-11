@@ -10,6 +10,11 @@ interface LibraryGridProps {
   onOpenCanvasBoard: (boardId: string, conversationId?: string) => void;
   onPreviewFile: (item: UnifiedLibraryItem) => void;
   onNavigateToChat: (conversationId: string) => void;
+  onDownloadItem: (item: UnifiedLibraryItem) => void;
+  onDeleteItem: (item: UnifiedLibraryItem) => void;
+  isSelectMode?: boolean;
+  selectedItemIds?: Set<string>;
+  onToggleSelect?: (item: UnifiedLibraryItem) => void;
 }
 
 export default function LibraryGrid({
@@ -18,6 +23,11 @@ export default function LibraryGrid({
   onOpenCanvasBoard,
   onPreviewFile,
   onNavigateToChat,
+  onDownloadItem,
+  onDeleteItem,
+  isSelectMode = false,
+  selectedItemIds = new Set(),
+  onToggleSelect,
 }: LibraryGridProps) {
   const localize = useLocalize();
 
@@ -47,6 +57,11 @@ export default function LibraryGrid({
           onOpenCanvasBoard={onOpenCanvasBoard}
           onPreviewFile={onPreviewFile}
           onNavigateToChat={onNavigateToChat}
+          onDownloadItem={onDownloadItem}
+          onDeleteItem={onDeleteItem}
+          isSelectMode={isSelectMode}
+          isSelected={selectedItemIds.has(item.id)}
+          onToggleSelect={onToggleSelect}
         />
       ))}
     </div>
