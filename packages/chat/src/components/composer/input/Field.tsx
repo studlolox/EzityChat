@@ -77,7 +77,7 @@ export default function ComposerField({
           variant="composer"
           data-listening={listening || undefined}
           data-locked={locked || undefined}
-          className={compact ? 'max-h-13' : 'max-h-[45vh] md:max-h-[55vh]'}
+          className={compact ? 'max-h-13' : 'max-h-[45dvh] md:max-h-[55vh]'}
         />
         {listening && (
           <ComposerWaveform

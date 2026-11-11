@@ -33,6 +33,15 @@ describe('IconButton', () => {
     );
   });
 
+  it('exposes composer action sizing with touch target expansion', () => {
+    render(<IconButton label="Composer action" size="composer" />);
+
+    expect(screen.getByRole('button', { name: 'Composer action' })).toHaveClass(
+      'size-theme-control',
+      'touch:size-theme-control-touch',
+    );
+  });
+
   it('offers the theme control corner between square and round', () => {
     render(
       <IconButton label="Soft" size="lg" shape="control">

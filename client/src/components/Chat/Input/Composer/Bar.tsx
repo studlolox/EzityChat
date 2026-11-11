@@ -102,7 +102,7 @@ function RoundButton({
       render={
         <IconButton
           label={label}
-          size="md"
+          size="composer"
           shape="composer"
           variant={primary ? 'primary' : 'ghost'}
           onClick={onClick}

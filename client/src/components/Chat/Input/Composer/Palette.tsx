@@ -1220,7 +1220,7 @@ function Palette({
               render={
                 <TooltipAnchor
                   description={disclosureLabel}
-                  render={<IconButton label={disclosureLabel} size="md" />}
+                  render={<IconButton label={disclosureLabel} size="composer" />}
                 />
               }
               data-testid="composer-palette-button"

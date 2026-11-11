@@ -15,7 +15,7 @@ type IconButtonVariantProps = {
     | 'destructive'
     | 'submit'
     | null;
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'theme' | null;
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'theme' | 'composer' | null;
   shape?: 'round' | 'square' | 'control' | 'theme' | 'composer' | 'inset' | null;
 };
 
@@ -50,6 +50,7 @@ const iconButtonVariants: (props?: IconButtonVariantProps & ClassProp) => string
         md: 'size-9',
         lg: 'size-10',
         theme: 'size-theme-control',
+        composer: 'size-theme-control touch:size-theme-control-touch',
       },
       shape: {
         round: 'rounded-full',

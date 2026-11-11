@@ -119,7 +119,7 @@ export default function CodeApprovalMenu({
         }
       >
         <SelectedIcon className="text-text-secondary size-4 shrink-0" aria-hidden="true" />
-        <span className="max-w-[12rem] min-w-0 truncate">
+        <span className="max-w-[6rem] min-w-0 truncate sm:max-w-[12rem]">
           {localize(modeOptions[selected].label)}
         </span>
         <ChevronDown
