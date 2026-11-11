@@ -23,7 +23,7 @@ export interface CanvasToolOptions {
   db: CanvasToolDatabaseMethods;
 }
 
-export const createDocumentSchema = z.object({
+export const createDocumentSchema: z.ZodObject<z.ZodRawShape> = z.object({
   title: z
     .string()
     .min(1)
@@ -41,11 +41,11 @@ export const createDocumentSchema = z.object({
     .describe("Programming language if docType is code (e.g. 'python', 'typescript')"),
 });
 
-export const readDocumentSchema = z.object({
+export const readDocumentSchema: z.ZodObject<z.ZodRawShape> = z.object({
   documentId: z.string().min(1).describe('ID of the target Canvas document to read'),
 });
 
-export const proposeEditSchema = z.object({
+export const proposeEditSchema: z.ZodObject<z.ZodRawShape> = z.object({
   documentId: z.string().min(1).describe('ID of the target Canvas document to edit'),
   patchSummary: z
     .string()

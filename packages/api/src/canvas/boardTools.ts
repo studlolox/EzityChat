@@ -35,7 +35,7 @@ const branchSchema = z.object({
     .describe('Optional hex color theme for the node (e.g. #007AFF, #34C759, #FF9500)'),
 });
 
-export const createMindmapBoardSchema = z.object({
+export const createMindmapBoardSchema: z.ZodObject<z.ZodRawShape> = z.object({
   rootTopic: z.string().min(1).describe('Central topic of the mindmap'),
   branches: z
     .array(branchSchema)
@@ -47,11 +47,11 @@ export const createMindmapBoardSchema = z.object({
     .describe("Layout orientation: 'horizontal' (left-to-right) or 'vertical' (top-to-bottom)"),
 });
 
-export const readMindmapBoardSchema = z.object({
+export const readMindmapBoardSchema: z.ZodObject<z.ZodRawShape> = z.object({
   boardId: z.string().min(1).describe('ID of the target Canvas Board to read'),
 });
 
-export const proposeBoardEditSchema = z.object({
+export const proposeBoardEditSchema: z.ZodObject<z.ZodRawShape> = z.object({
   boardId: z.string().min(1).describe('ID of the target Canvas Board to edit'),
   patchSummary: z
     .string()

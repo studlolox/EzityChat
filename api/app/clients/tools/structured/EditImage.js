@@ -1,6 +1,11 @@
 const { Tool } = require('@librechat/agents/langchain/tools');
 const { ContentTypes } = require('librechat-data-provider');
-const { executeEditImage, editImageSchema, comfyEditImageSchema } = require('@librechat/api');
+const {
+  executeEditImage,
+  editImageSchema,
+  comfyEditImageSchema,
+  IMAGE_PROMPT_ENHANCER_GUIDE,
+} = require('@librechat/api');
 
 const displayMessage =
   'Image editing complete. The edited image is displayed inline in the conversation.';
@@ -27,7 +32,8 @@ class EditImageAPI extends Tool {
     this.description =
       'Edit, transform, inpaint, outpaint, or combine images using the AI image editing engine.';
     this.description_for_model =
-      'Use "edit_image" whenever the user asks to modify, restyle, inpaint (targeted edit with mask), outpaint, or combine uploaded reference pictures or previously generated images. Always provide reference_image_id with the authorized application file_id of the target image. Never use this tool for brand new text-only image generation — use "generate_image" instead.';
+      'Use "edit_image" whenever the user asks to modify, restyle, inpaint (targeted edit with mask), outpaint, or combine uploaded reference pictures or previously generated images. Always provide reference_image_id with the authorized application file_id of the target image. Never use this tool for brand new text-only image generation — use "generate_image" instead.' +
+      (IMAGE_PROMPT_ENHANCER_GUIDE ? `\n\n${IMAGE_PROMPT_ENHANCER_GUIDE}` : '');
     this.schema = schema;
   }
 

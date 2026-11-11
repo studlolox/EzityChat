@@ -145,12 +145,12 @@ export class ComfyImageClient {
 
       let workflow: SupportedWorkflowId = WORKFLOW_TURBO;
       if (params.workflow) {
-        if (
-          params.workflow === WORKFLOW_TURBO ||
-          params.workflow === WORKFLOW_UC ||
-          params.workflow === WORKFLOW_UNIFIED
-        ) {
-          workflow = params.workflow as SupportedWorkflowId;
+        if (params.workflow === 'fast' || params.workflow === WORKFLOW_TURBO) {
+          workflow = WORKFLOW_TURBO;
+        } else if (params.workflow === 'quality' || params.workflow === WORKFLOW_UC) {
+          workflow = WORKFLOW_UC;
+        } else if (params.workflow === WORKFLOW_UNIFIED) {
+          workflow = WORKFLOW_UNIFIED;
         } else {
           throw new ComfyGenerationError(
             `Unsupported workflow preset '${params.workflow}'.`,

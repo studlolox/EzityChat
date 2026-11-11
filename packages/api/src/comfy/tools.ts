@@ -1,19 +1,67 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as crypto from 'node:crypto';
-
 import type { ComfyClientOptions } from './client';
-
+import { ALLOWED_IMAGE_SIZES, WORKFLOW_TURBO, WORKFLOW_UC } from './constants';
 import { ComfyImageClient, sanitizeErrorMessage } from './client';
-import { ALLOWED_IMAGE_SIZES } from './constants';
+
+export const IMAGE_PROMPT_ENHANCER_GUIDE: string = `
+Image Prompt Rules (Act as prompt enhancer):
+1. edit_mode: "generate" (New Image):
+   Expand brief requests into ONE descriptive English paragraph (70-300 words) describing the finished frame:
+   - Subject & Setting: State style/medium (photo, 3D, illustration), subject appearance, and environment.
+   - Composition & Lighting: Describe spatial placement (foreground vs background) and lighting (e.g. soft daylight, cinematic rim light).
+   - Text & Textures: Put exact text in double quotes ("..."). Pair colors with textures (e.g. weathered wood, brushed metal).
+   - Avoid buzzwords: No "photorealistic", "masterpiece", "8K", or meta-commands ("create").
+2. edit_mode: "edit" (Modify <image1>):
+   Write a direct delta referencing <image1>, ending with: 'Keep everything else exactly the same.'
+   Example: 'Turn the jacket in <image1> dark leather. Keep everything else exactly the same.'
+3. edit_mode: "inpaint" (Mask Edit):
+   Describe the full scene including the new element inside the masked area.
+4. edit_mode: "outpaint":
+   'Extend <image1> to the [sides/top/bottom], continuing [environment].'
+`.trim();
+
+export const PROMPT_ENHANCER_GUIDE: string = IMAGE_PROMPT_ENHANCER_GUIDE;
+
+/**
+ * Normalizes prompt syntax for image conditioning and conversational image editing.
+ * In 'edit' mode: ensures <image1> is referenced and adds preservation suffix if omitted.
+ * In 'outpaint' mode: ensures <image1> is referenced.
+ */
+export function normalizePrompt(
+  prompt: string,
+  editMode: string = 'generate',
+  refCount = 0,
+): string {
+  // Normalize variations like <image_1> or <image-1> to <image1>
+  const trimmed = prompt.trim().replace(/<image[_-](\d+)>/gi, '<image$1>');
+  if (editMode === 'edit' && refCount > 0) {
+    let out = trimmed;
+    if (!out.includes('<image1>')) {
+      out = `In <image1>, ${out.charAt(0).toLowerCase() + out.slice(1)}`;
+    }
+    if (
+      !/keep everything else|everything else.*stay the same|other.*stay the same|leave.*unchanged/i.test(
+        out,
+      )
+    ) {
+      out = `${out.replace(/\.?$/, '.')} Keep everything else exactly the same.`;
+    }
+    return out;
+  }
+  if (editMode === 'outpaint' && refCount > 0 && !trimmed.includes('<image1>')) {
+    return `Extend <image1>: ${trimmed}`;
+  }
+  return trimmed;
+}
 
 export const generateImageSchema: Record<string, unknown> = {
   type: 'object',
   properties: {
     prompt: {
       type: 'string',
-      description:
-        'Detailed visual prompt describing subject, composition, background, lighting, and style.',
+      description: `Detailed visual prompt describing subject, composition, background, lighting, and style.\n\n${IMAGE_PROMPT_ENHANCER_GUIDE}`,
     },
     size: {
       type: 'string',
@@ -23,10 +71,10 @@ export const generateImageSchema: Record<string, unknown> = {
     },
     workflow: {
       type: 'string',
-      enum: ['qwen21-turbo', 'qwen21-uc'],
+      enum: ['fast', 'quality'],
       description:
-        'Workflow engine. "qwen21-turbo" runs 8-step lightning generation (default); "qwen21-uc" runs 30-step deep-quality generation.',
-      default: 'qwen21-turbo',
+        'Generation mode: "fast" for high-speed generation (default); "quality" for enhanced detail and higher quality generation.',
+      default: 'fast',
     },
     transparent: {
       type: 'boolean',
@@ -44,8 +92,7 @@ export const editImageSchema: Record<string, unknown> = {
   properties: {
     prompt: {
       type: 'string',
-      description:
-        'Instructions describing the changes, enhancements, replacements, or stylization to apply to the reference image(s).',
+      description: `Instructions describing the changes, enhancements, replacements, or stylization to apply to the reference image(s).\n\n${IMAGE_PROMPT_ENHANCER_GUIDE}`,
     },
     reference_image_id: {
       type: 'string',
@@ -139,6 +186,22 @@ export interface ImageToolResult {
   message?: string;
 }
 
+/**
+ * Resolves external generation mode alias ('fast' / 'quality') to internal workflow preset.
+ */
+export function resolveWorkflowPreset(workflow?: string): string {
+  if (!workflow || workflow === 'fast') {
+    return WORKFLOW_TURBO;
+  }
+  if (workflow === 'quality') {
+    return WORKFLOW_UC;
+  }
+  if (workflow === WORKFLOW_TURBO || workflow === WORKFLOW_UC) {
+    return workflow;
+  }
+  return WORKFLOW_TURBO;
+}
+
 export async function executeComfyGenerate(
   args: { prompt: string; size?: string; workflow?: string; transparent?: boolean },
   options: ComfyToolExecuteOptions,
@@ -160,10 +223,13 @@ export async function executeComfyGenerate(
       };
     }
 
+    const finalPrompt = normalizePrompt(cleanPrompt, 'generate', 0);
+    const resolvedWorkflow = resolveWorkflowPreset(args.workflow);
+
     const result = await client.generate({
-      prompt: cleanPrompt,
+      prompt: finalPrompt,
       size: args.size,
-      workflow: args.workflow,
+      workflow: resolvedWorkflow,
       transparent: args.transparent,
     });
 
@@ -374,8 +440,14 @@ export async function executeEditImage(
       };
     }
 
+    const effectiveRefCount =
+      referenceBase64List.length > 0 || args.reference_job_id
+        ? Math.max(1, referenceBase64List.length)
+        : 0;
+    const finalPrompt = normalizePrompt(cleanPrompt, editMode, effectiveRefCount);
+
     const result = await client.generate({
-      prompt: cleanPrompt,
+      prompt: finalPrompt,
       workflow: 'qwen21-unified',
       editMode,
       referenceImage: referenceBase64List[0],

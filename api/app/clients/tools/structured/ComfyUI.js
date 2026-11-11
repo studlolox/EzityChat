@@ -5,6 +5,7 @@ const {
   executeGenerateImage,
   generateImageSchema,
   comfyGenerateImageSchema,
+  IMAGE_PROMPT_ENHANCER_GUIDE,
 } = require('@librechat/api');
 
 const displayMessage =
@@ -29,7 +30,8 @@ class ComfyUIAPI extends Tool {
     this.name = 'generate_image';
     this.description = 'Generate high-quality images and artwork using the AI image engine.';
     this.description_for_model =
-      'Use "generate_image" to generate brand new images, artwork, posters, illustrations, or photo-realistic visuals based on text descriptions. Do NOT use this tool to edit, modify, or extend uploaded pictures — use "edit_image" instead.';
+      'Use "generate_image" to generate brand new images, artwork, posters, illustrations, or photo-realistic visuals based on text descriptions. Do NOT use this tool to edit, modify, or extend uploaded pictures — use "edit_image" instead.' +
+      (IMAGE_PROMPT_ENHANCER_GUIDE ? `\n\n${IMAGE_PROMPT_ENHANCER_GUIDE}` : '');
     this.schema = schema;
   }
 
