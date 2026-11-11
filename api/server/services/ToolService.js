@@ -790,6 +790,8 @@ const nativeTools = new Set([
   Tools.file_search,
   Tools.web_search,
   Tools.memory,
+  'set_memory',
+  'delete_memory',
 ]);
 
 const mcpServerPinPrefix = `${Constants.mcp_server}${Constants.mcp_delimiter}`;

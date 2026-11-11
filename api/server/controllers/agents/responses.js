@@ -8,6 +8,7 @@ const {
   PermissionBits,
   hasPermissions,
   AgentCapabilities,
+  defaultAgentCapabilities,
 } = require('librechat-data-provider');
 const {
   createRun,
@@ -799,7 +800,7 @@ const executeResponse = async (envelope, { req, res }) => {
         getRoleByName: db.getRoleByName,
       };
 
-      const enabledCapabilities = new Set(agentsEConfig?.capabilities);
+      const enabledCapabilities = new Set(agentsEConfig?.capabilities ?? defaultAgentCapabilities);
       const codeCapabilityEnabled = enabledCapabilities.has(AgentCapabilities.execute_code);
       const fileSearchCapabilityEnabled = enabledCapabilities.has(AgentCapabilities.file_search);
       /** Started before the memory read rather than awaited on its own line, so

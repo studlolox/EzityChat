@@ -196,6 +196,24 @@ export async function loadToolDefinitions(
     }
 
     if (!mcpToolPattern.test(toolName)) {
+      const extraTools = toolkitExpansion[toolName as keyof typeof toolkitExpansion];
+      if (extraTools) {
+        for (const extra of extraTools) {
+          const extraDef = getToolDefinition(extra);
+          if (extraDef && !builtInToolDefs.some((d) => d.name === extra)) {
+            builtInToolDefs.push({
+              name: extra,
+              description: extraDef.description,
+              parameters: extraDef.schema as JsonSchemaType | undefined,
+            });
+          }
+        }
+      }
+
+      if (toolName === 'memory') {
+        continue;
+      }
+
       if (!isBuiltInTool(toolName)) {
         continue;
       }
@@ -208,20 +226,6 @@ export async function loadToolDefinitions(
         description: registryDef.description,
         parameters: registryDef.schema as JsonSchemaType | undefined,
       });
-
-      const extraTools = toolkitExpansion[toolName as keyof typeof toolkitExpansion];
-      if (extraTools) {
-        for (const extra of extraTools) {
-          const extraDef = getToolDefinition(extra);
-          if (extraDef) {
-            builtInToolDefs.push({
-              name: extra,
-              description: extraDef.description,
-              parameters: extraDef.schema as JsonSchemaType | undefined,
-            });
-          }
-        }
-      }
       continue;
     }
 

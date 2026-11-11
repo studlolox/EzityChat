@@ -4,8 +4,23 @@ import {
   GitHubCompareToolDefinition,
 } from '@librechat/agents';
 import type { ExtendedJsonSchema } from './schema';
+import {
+  CANVAS_BOARD_TOOL_NAMES,
+  createMindmapBoardSchema,
+  readMindmapBoardSchema,
+  proposeBoardEditSchema,
+} from '~/canvas/boardTools';
+import {
+  CANVAS_TOOL_NAMES,
+  createDocumentSchema,
+  readDocumentSchema,
+  proposeEditSchema,
+} from '~/canvas/tools';
 import { AskUserQuestionToolDefinition } from '~/agents/hitl/askUserQuestionTool';
+import { SET_MEMORY_TOOL_NAME, DELETE_MEMORY_TOOL_NAME } from '~/agents/memory';
+import { generateImageSchema, editImageSchema } from '~/comfy/tools';
 import { geminiToolkit } from '~/tools/toolkits/gemini';
+import { toToolParameters } from '~/tools/schema';
 import { oaiToolkit } from '~/tools/toolkits/oai';
 
 export type { ExtendedJsonSchema } from './schema';
@@ -386,6 +401,110 @@ export const toolDefinitions: Record<string, ToolRegistryDefinition> = {
     toolType: 'builtin',
     responseFormat: geminiToolkit.gemini_image_gen.responseFormat,
   },
+  generate_image: {
+    name: 'generate_image',
+    description:
+      'Generate high-quality images and artwork based on text descriptions using the AI image engine. Do NOT use this tool to edit, modify, or extend uploaded pictures — use "edit_image" instead.',
+    schema: generateImageSchema as ExtendedJsonSchema,
+    toolType: 'builtin',
+    responseFormat: 'content_and_artifact',
+  },
+  edit_image: {
+    name: 'edit_image',
+    description:
+      'Modify, restyle, inpaint (targeted edit with mask), outpaint, or combine uploaded reference pictures or previously generated images using authorized reference_image_id. Never use this tool for brand new text-only image generation — use "generate_image" instead.',
+    schema: editImageSchema as ExtendedJsonSchema,
+    toolType: 'builtin',
+    responseFormat: 'content_and_artifact',
+  },
+  create_canvas_document: {
+    name: CANVAS_TOOL_NAMES.CREATE_CANVAS_DOCUMENT,
+    description:
+      'Creates a new editable document or code file in the Canvas workspace. Proactively use this when drafting or revising substantial content (>20 lines).',
+    schema: toToolParameters(createDocumentSchema) as ExtendedJsonSchema,
+    toolType: 'builtin',
+  },
+  read_canvas_document: {
+    name: CANVAS_TOOL_NAMES.READ_CANVAS_DOCUMENT,
+    description: 'Reads the full content and metadata of an existing Canvas document by its ID.',
+    schema: toToolParameters(readDocumentSchema) as ExtendedJsonSchema,
+    toolType: 'builtin',
+  },
+  propose_canvas_edit: {
+    name: CANVAS_TOOL_NAMES.PROPOSE_CANVAS_EDIT,
+    description:
+      'Proposes a non-destructive edit or update to an existing Canvas document. The user is presented with a diff to accept or reject.',
+    schema: toToolParameters(proposeEditSchema) as ExtendedJsonSchema,
+    toolType: 'builtin',
+  },
+  create_mindmap_board: {
+    name: CANVAS_BOARD_TOOL_NAMES.CREATE_MINDMAP_BOARD,
+    description:
+      'Creates an interactive hierarchical mindmap board in the Canvas workspace. Use this when the user requests a mindmap, concept tree, brainstorming map, or structural diagram.',
+    schema: toToolParameters(createMindmapBoardSchema) as ExtendedJsonSchema,
+    toolType: 'builtin',
+  },
+  read_mindmap_board: {
+    name: CANVAS_BOARD_TOOL_NAMES.READ_MINDMAP_BOARD,
+    description: 'Reads the nodes and edges of an interactive Canvas Mindmap Board.',
+    schema: toToolParameters(readMindmapBoardSchema) as ExtendedJsonSchema,
+    toolType: 'builtin',
+  },
+  propose_board_edit: {
+    name: CANVAS_BOARD_TOOL_NAMES.PROPOSE_BOARD_EDIT,
+    description:
+      'Proposes a non-destructive edit to an existing Canvas Mindmap Board. The user reviews the proposed visual diff and accepts or rejects.',
+    schema: toToolParameters(proposeBoardEditSchema) as ExtendedJsonSchema,
+    toolType: 'builtin',
+  },
+  memory: {
+    name: 'memory',
+    description:
+      'Enables user personalization memory management via set_memory and delete_memory tools.',
+    schema: {
+      type: 'object',
+      properties: {},
+    },
+    toolType: 'builtin',
+  },
+  [SET_MEMORY_TOOL_NAME]: {
+    name: SET_MEMORY_TOOL_NAME,
+    description: 'Saves important information about the user into memory.',
+    schema: {
+      type: 'object',
+      properties: {
+        key: {
+          type: 'string',
+          description: 'The key identifier for this memory',
+        },
+        value: {
+          type: 'string',
+          description:
+            'Value MUST be a complete sentence that fully describes relevant user information.',
+        },
+      },
+      required: ['key', 'value'],
+    } as ExtendedJsonSchema,
+    toolType: 'builtin',
+    responseFormat: 'content_and_artifact',
+  },
+  [DELETE_MEMORY_TOOL_NAME]: {
+    name: DELETE_MEMORY_TOOL_NAME,
+    description:
+      'Deletes specific memory data about the user using the provided key. For updating existing memories, use the `set_memory` tool instead.',
+    schema: {
+      type: 'object',
+      properties: {
+        key: {
+          type: 'string',
+          description: 'The key identifier of the memory to delete',
+        },
+      },
+      required: ['key'],
+    } as ExtendedJsonSchema,
+    toolType: 'builtin',
+    responseFormat: 'content_and_artifact',
+  },
 };
 
 /**
@@ -430,5 +549,8 @@ const agentToolDefinitions: Record<string, ToolRegistryDefinition> = {
 };
 
 export function getToolDefinition(toolName: string): ToolRegistryDefinition | undefined {
+  if (toolName === 'comfyui') {
+    return toolDefinitions.generate_image;
+  }
   return toolDefinitions[toolName] ?? agentToolDefinitions[toolName];
 }

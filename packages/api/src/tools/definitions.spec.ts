@@ -410,6 +410,42 @@ describe('definitions.ts', () => {
         expect(registryEntry?.parameters).toBeDefined();
         expect(registryEntry?.allowed_callers).toContain('direct');
       });
+
+      it('should include parameters for image generation, canvas, and memory tools', async () => {
+        const testTools = [
+          'generate_image',
+          'edit_image',
+          'create_canvas_document',
+          'read_canvas_document',
+          'propose_canvas_edit',
+          'create_mindmap_board',
+          'read_mindmap_board',
+          'propose_board_edit',
+          'set_memory',
+          'delete_memory',
+        ];
+        mockIsBuiltInTool.mockImplementation((name) => testTools.includes(name));
+
+        const params: LoadToolDefinitionsParams = {
+          userId: 'user-123',
+          agentId: 'agent-123',
+          tools: testTools,
+        };
+
+        const deps: LoadToolDefinitionsDeps = {
+          getOrFetchMCPServerTools: mockGetOrFetchMCPServerTools,
+          isBuiltInTool: mockIsBuiltInTool,
+        };
+
+        const result = await loadToolDefinitions(params, deps);
+
+        for (const toolName of testTools) {
+          const def = result.toolDefinitions.find((d) => d.name === toolName);
+          expect(def).toBeDefined();
+          expect(def?.parameters).toBeDefined();
+          expect(result.toolRegistry.has(toolName)).toBe(true);
+        }
+      });
     });
 
     describe('programmatic tool calling capability gate', () => {
