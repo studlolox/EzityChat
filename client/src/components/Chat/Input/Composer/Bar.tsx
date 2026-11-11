@@ -69,9 +69,15 @@ export function chipMenuModes(modes?: PaletteMode[]) {
   return modes?.filter((mode) => mode.icon == null) ?? [];
 }
 
+const AMBIENT_TOOLS = new Set(['web_search', 'memory']);
+
 /** Projects palette state into the persistent quick controls in one pass. */
 export function projectBarEntries(entries: PaletteEntry[]): PaletteEntry[] {
-  return entries.filter((entry) => entry.section !== 'skill' && (entry.active || entry.pinned));
+  return entries.filter(
+    (entry) =>
+      entry.section !== 'skill' &&
+      (entry.pinned || (entry.active && !AMBIENT_TOOLS.has(entry.itemId))),
+  );
 }
 
 interface RoundButtonProps {

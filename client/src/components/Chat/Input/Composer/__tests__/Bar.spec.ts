@@ -26,6 +26,16 @@ describe('projectBarEntries', () => {
 
     expect(projectBarEntries([active, pinned, inactive, skill])).toEqual([active, pinned]);
   });
+
+  it('excludes ambient active tools (web_search, memory) from bar unless pinned', () => {
+    const webSearch = entry('web_search', { active: true });
+    const memory = entry('memory', { active: true });
+    const pinnedWebSearch = entry('web_search', { pinned: true, active: true });
+    const activeTool = entry('create_image', { active: true });
+
+    expect(projectBarEntries([webSearch, memory, activeTool])).toEqual([activeTool]);
+    expect(projectBarEntries([pinnedWebSearch])).toEqual([pinnedWebSearch]);
+  });
 });
 
 describe('chipMenuModes', () => {

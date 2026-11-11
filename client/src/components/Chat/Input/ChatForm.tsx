@@ -76,6 +76,7 @@ import AskUserQuestionPopover from './AskUserQuestionPopover';
 import useAttachTarget from '~/hooks/Input/useAttachTarget';
 import { canvasOpenAtom } from '~/components/Canvas/state';
 import { chatDirectionAtom } from '~/store/chatDirection';
+import { createImageAtomFamily } from '~/store/imageGen';
 import ProjectLandingChip from '../ProjectLandingChip';
 import useHasAccess from '~/hooks/Roles/useHasAccess';
 import useDictation from '~/hooks/Input/useDictation';
@@ -212,6 +213,7 @@ const ChatForm = memo(function ChatForm({
     () => conversation?.conversationId ?? Constants.NEW_CONVO,
     [conversation?.conversationId],
   );
+  const [createImageActive, setCreateImageActive] = useAtom(createImageAtomFamily(conversationId));
   const isNewConversation = conversationId === '' || conversationId === Constants.NEW_CONVO;
   /**
    * The quote feature merges excerpts server-side in `BaseClient.sendMessage`,
@@ -520,9 +522,20 @@ const ChatForm = memo(function ChatForm({
       if (dictationAnswerModeActive && submitAnswerText(props.text)) {
         return;
       }
-      return submitMessage({ text: props.text });
+      let text = props.text;
+      if (createImageActive && text?.trim()) {
+        text = `Create an image: ${text.trim()}`;
+        setCreateImageActive(false);
+      }
+      return submitMessage({ text });
     },
-    [dictationAnswerModeActive, submitAnswerText, submitMessage],
+    [
+      dictationAnswerModeActive,
+      submitAnswerText,
+      submitMessage,
+      createImageActive,
+      setCreateImageActive,
+    ],
   );
   const dictation = useDictation({
     ask: dictationAsk,
@@ -624,8 +637,16 @@ const ChatForm = memo(function ChatForm({
    *  queued follow-up about to start), then an ordinary send: the same route
    *  for typed, dictated, and shortcut-bound submissions. */
   const submitComposerText = useCallback(
-    (data: { text: string }): false | void =>
-      submitFromComposer(
+    (data: { text: string }): false | void => {
+      let submissionData = data;
+      if (createImageActive && data.text?.trim()) {
+        submissionData = {
+          ...data,
+          text: `Create an image: ${data.text.trim()}`,
+        };
+        setCreateImageActive(false);
+      }
+      return submitFromComposer(
         {
           answerMode,
           steering,
@@ -638,9 +659,10 @@ const ChatForm = memo(function ChatForm({
           },
           reset: () => methods.reset(),
         },
-        data,
-      ),
-    [answerMode, steering, submitMessage, methods, index],
+        submissionData,
+      );
+    },
+    [answerMode, steering, submitMessage, methods, index, createImageActive, setCreateImageActive],
   );
 
   return (

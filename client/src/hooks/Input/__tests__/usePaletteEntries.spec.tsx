@@ -195,6 +195,7 @@ describe('usePaletteEntries', () => {
 
   it('lists the built-in tools in a fixed order, servers last', () => {
     expect(keysOf(entries().result)).toEqual([
+      'builtin:create_image',
       'builtin:web_search',
       'builtin:execute_code',
       'builtin:file_search',

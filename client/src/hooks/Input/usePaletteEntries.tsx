@@ -12,6 +12,7 @@ import {
   FolderSearch,
   WandSparkles,
   SquareChevronRight,
+  Image as ImageIcon,
 } from 'lucide-react';
 import {
   AuthType,
@@ -36,6 +37,7 @@ import {
   useSkillActiveState,
 } from '~/hooks';
 import { getStatusColor, getStatusTextKey } from '~/components/MCP/mcpServerUtils';
+import { createImageAtomFamily, createImagePinnedAtom } from '~/store/imageGen';
 import { filterSkillsForPopover } from '~/components/Chat/Input/SkillsCommand';
 import { useAgentsMapContext, useBadgeRowContext } from '~/Providers';
 import { useSkillsInfiniteQuery } from '~/data-provider';
@@ -178,6 +180,8 @@ export default function usePaletteEntries({
   const [pendingManualSkills, setPendingManualSkills] = useAtom(
     pendingManualSkillsByConvoId(conversationId),
   );
+  const [createImageActive, setCreateImageActive] = useAtom(createImageAtomFamily(conversationId));
+  const [createImagePinned, setCreateImagePinned] = useAtom(createImagePinnedAtom);
 
   const {
     codeEnabled,
@@ -304,6 +308,18 @@ export default function usePaletteEntries({
         modes,
       });
     };
+
+    if (toolsEnabled) {
+      pushTool(
+        'create_image',
+        localize('com_ui_create_image'),
+        <ImageIcon className="icon-md" aria-hidden="true" />,
+        createImageActive,
+        createImagePinned,
+        () => setCreateImageActive((prev) => !prev),
+        () => setCreateImagePinned(false),
+      );
+    }
 
     if (toolsEnabled && canUseWebSearch && webSearchEnabled) {
       /* Same rule the old tools menu used for its gear: only credentials the
@@ -627,5 +643,9 @@ export default function usePaletteEntries({
     canUseFileSearch,
     fileSearchEnabled,
     user?.id,
+    createImageActive,
+    createImagePinned,
+    setCreateImageActive,
+    setCreateImagePinned,
   ]);
 }
