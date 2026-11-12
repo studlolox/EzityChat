@@ -27,6 +27,9 @@ const artifactFilename = {
    * `index.html` document (head + body) and ships it via `attachment.text`.
    * The Sandpack `static` template loads it as-is. See
    * `packages/api/src/files/documents/html.ts`. */
+  'application/vnd.ezity.docx-preview': 'index.html',
+  'application/vnd.ezity.spreadsheet-preview': 'index.html',
+  'application/vnd.ezity.presentation-preview': 'index.html',
   'application/vnd.librechat.docx-preview': 'index.html',
   'application/vnd.librechat.spreadsheet-preview': 'index.html',
   'application/vnd.librechat.presentation-preview': 'index.html',
@@ -64,6 +67,9 @@ const artifactTemplate: Record<
   'text/plain': 'static',
   /* Office preview buckets ride the same static pipeline — the backend
    * already sanitized the HTML, so we just hand it to Sandpack. */
+  'application/vnd.ezity.docx-preview': 'static',
+  'application/vnd.ezity.spreadsheet-preview': 'static',
+  'application/vnd.ezity.presentation-preview': 'static',
   'application/vnd.librechat.docx-preview': 'static',
   'application/vnd.librechat.spreadsheet-preview': 'static',
   'application/vnd.librechat.presentation-preview': 'static',
@@ -299,6 +305,9 @@ const dependenciesMap: Record<
   'text/plain': {},
   /* Office preview HTML is fully self-contained (CSS-only sheet tabs, no
    * JS), so no Sandpack-side packages are needed. */
+  'application/vnd.ezity.docx-preview': {},
+  'application/vnd.ezity.spreadsheet-preview': {},
+  'application/vnd.ezity.presentation-preview': {},
   'application/vnd.librechat.docx-preview': {},
   'application/vnd.librechat.spreadsheet-preview': {},
   'application/vnd.librechat.presentation-preview': {},
@@ -447,9 +456,9 @@ export const TOOL_ARTIFACT_TYPES = {
    * — they don't appear on disk or in HTTP headers, only on the artifact
    * object — so they can't collide with the canonical office MIMEs that
    * the routing maps key off of. */
-  DOCX: 'application/vnd.librechat.docx-preview',
-  SPREADSHEET: 'application/vnd.librechat.spreadsheet-preview',
-  PRESENTATION: 'application/vnd.librechat.presentation-preview',
+  DOCX: 'application/vnd.ezity.docx-preview',
+  SPREADSHEET: 'application/vnd.ezity.spreadsheet-preview',
+  PRESENTATION: 'application/vnd.ezity.presentation-preview',
 } as const;
 
 export type ToolArtifactType = (typeof TOOL_ARTIFACT_TYPES)[keyof typeof TOOL_ARTIFACT_TYPES];

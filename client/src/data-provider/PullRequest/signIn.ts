@@ -10,7 +10,7 @@ export const PULL_REQUEST_CONNECT_POLL_MAX_MS = 30_000;
 /** How long a settled sign-in keeps retrying its status read after the flow expired. */
 export const PULL_REQUEST_SETTLED_GRACE_MS = 2 * 60_000;
 /** Same-origin pages that end an OAuth sign-in announce it here. */
-export const OAUTH_SETTLED_CHANNEL = 'librechat:oauth-settled';
+export const OAUTH_SETTLED_CHANNEL = 'ezity:oauth-settled';
 
 type Watch = { stop: () => void };
 

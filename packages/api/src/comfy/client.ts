@@ -80,6 +80,7 @@ export function sanitizeErrorMessage(rawError: unknown): string {
   let cleaned = rawError.split(/[\r\n]+/)[0].trim();
   cleaned = cleaned.replace(/https?:\/\/[^\s]+/gi, '[redacted-url]');
   cleaned = cleaned.replace(/(?:\/[a-zA-Z0-9._-]+)+/g, '[redacted-path]');
+  cleaned = cleaned.replace(/\b(?:comfyui|comfy|qwen21?|qwen)\b/gi, 'engine');
   if (cleaned.length > 200) {
     cleaned = cleaned.slice(0, 197) + '...';
   }

@@ -31,7 +31,7 @@ export function sanitizeTelemetryUrl(value: string): string {
   const trimmed = value.trim();
   if (/^(?:data|javascript):/i.test(trimmed)) return '[redacted]';
   try {
-    const url = new URL(value, 'https://librechat.invalid');
+    const url = new URL(value, 'https://ezity.invalid');
     url.search = '';
     url.hash = '';
     url.username = '';
@@ -112,9 +112,7 @@ export function sanitizeReplayEvent(event: ReplayEvent, pathname: string): Repla
   if (event.type === 4) {
     let allowed = false;
     try {
-      allowed = isReplayRouteAllowed(
-        new URL(event.data.href, 'https://librechat.invalid').pathname,
-      );
+      allowed = isReplayRouteAllowed(new URL(event.data.href, 'https://ezity.invalid').pathname);
     } catch {
       // Malformed metadata is not useful enough to risk forwarding an unparsed URL.
     }
@@ -141,7 +139,7 @@ export function sanitizeReplayEvent(event: ReplayEvent, pathname: string): Repla
 
 export function createReplayPrivacyPlugin(getPathname: () => string): ReplayPlugin {
   return {
-    name: 'librechat-url-privacy',
+    name: 'ezity-url-privacy',
     options: undefined,
     // rrweb's plugin type permits arbitrary extensions, but this plugin only preserves/redacts events.
     eventProcessor: <TExtend>(event: ReplayEvent) =>

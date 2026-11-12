@@ -30,6 +30,17 @@ export function GeneratedImagesCard({
   const resolvedFilename =
     filename || (prompt ? `${prompt.slice(0, 30).trim()}.png` : 'generated-image.png');
 
+  const resolveWorkflowLabel = (wf?: string): string | null => {
+    if (!wf) return null;
+    const lower = wf.toLowerCase();
+    if (lower.includes('fast') || lower.includes('turbo')) return 'Fast';
+    if (lower.includes('quality') || lower.includes('uc')) return 'High Quality';
+    if (lower.includes('standard') || lower.includes('unified')) return 'Standard';
+    return null;
+  };
+
+  const workflowLabel = resolveWorkflowLabel(workflow);
+
   const handleCopyPrompt = async () => {
     if (!prompt) return;
     try {
@@ -103,9 +114,9 @@ export function GeneratedImagesCard({
                 {aspectRatio || `${width}×${height}`}
               </span>
             )}
-            {workflow && (
+            {workflowLabel && (
               <span className="border-border-light bg-surface-primary text-text-tertiary text-3xs rounded-md border px-1.5 py-0.5 font-mono">
-                {workflow}
+                {workflowLabel}
               </span>
             )}
           </div>

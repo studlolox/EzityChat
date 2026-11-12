@@ -562,7 +562,7 @@ export const PASTED_TEXT_FILENAME = 'pasted-text.txt';
  * `sessionStorage` is exactly that scope, surviving this tab's reloads without reaching another.
  * It has to survive a reload or an already-sent paste would be reclassified as unsent, because the
  * files draft it gets restored from does survive. */
-const PASTED_TEXT_STORAGE_KEY = 'librechat-pasted-text-file-ids';
+const PASTED_TEXT_STORAGE_KEY = 'ezity-pasted-text-file-ids';
 
 const readStoredPasteIds = (key: string): string[] => {
   try {
@@ -612,7 +612,7 @@ export const isPastedTextFileMarked = (fileId?: string | null): boolean =>
  * suspended tab still holding cleanup work, which is the same bug again with a longer fuse. The
  * ledger is bounded by count instead, evicting the oldest entries only when it would otherwise
  * grow without limit, since running out of origin quota would break draft writes for everyone. */
-const SUBMITTED_PASTES_STORAGE_KEY = 'librechat-submitted-paste-file-ids';
+const SUBMITTED_PASTES_STORAGE_KEY = 'ezity-submitted-paste-file-ids';
 const SUBMITTED_PASTE_LIMIT = 5000;
 
 type SubmittedPastes = Record<string, number>;
@@ -700,7 +700,7 @@ export type PendingFileDeletion = {
 export const failedFileIdsFrom = (result: DeleteFilesResponse | void): string[] =>
   result != null && Array.isArray(result.failedFileIds) ? result.failedFileIds : [];
 
-const RETAINED_DELETION_STORAGE_KEY = 'librechat-retained-file-deletions';
+const RETAINED_DELETION_STORAGE_KEY = 'ezity-retained-file-deletions';
 const RETAINED_RETRY_BASE_DELAY_MS = 5_000;
 const RETAINED_RETRY_MAX_DELAY_MS = 60_000;
 
@@ -932,7 +932,7 @@ export const subscribeRetainedFileDeletions = (listener: () => void): (() => voi
   };
 };
 
-const PENDING_DISCARD_STORAGE_KEY = 'librechat-pending-file-discards';
+const PENDING_DISCARD_STORAGE_KEY = 'ezity-pending-file-discards';
 
 type PendingDiscardStore = Record<string, string[]>;
 

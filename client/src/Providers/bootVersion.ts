@@ -15,6 +15,7 @@ export const injectThemeCacheVersion = (html: string): string =>
   html.replace(THEME_CACHE_VERSION_PLACEHOLDER, themeRoleFingerprint());
 
 export const bundledThemes: Readonly<Record<BundledThemeName, ThemeDefinition>> = {
+  ezity: libreChatTheme,
   librechat: libreChatTheme,
   clickhouse: clickHouseTheme,
 };

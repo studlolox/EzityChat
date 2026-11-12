@@ -6,7 +6,7 @@
 export const THEME_VERSION = 1 as const;
 
 /** The names `interface.theme` may give instead of an inline definition. */
-export const bundledThemeNames = Object.freeze(['librechat', 'clickhouse'] as const);
+export const bundledThemeNames = Object.freeze(['ezity', 'librechat', 'clickhouse'] as const);
 
 export type BundledThemeName = (typeof bundledThemeNames)[number];
 

@@ -47,7 +47,7 @@ type StoredFilesDraft = {
 
 const newConversationDraftTokens = new Map<number, symbol>();
 const newConversationDraftRevisions = new Map<number, string>();
-const newConversationRevisionKey = (index: number): string => `librechat-new-composer:${index}`;
+const newConversationRevisionKey = (index: number): string => `ezity-new-composer:${index}`;
 
 /** Reload preserves the revision; an explicit reset replaces it before any new work starts. */
 export const getNewConversationDraftRevision = (index = 0): string => {
@@ -758,7 +758,7 @@ export const getFilesDraft = (id: string): FilesDraft => {
   }
 };
 
-const TAB_SESSION_STORAGE_KEY = 'librechat-tab-session';
+const TAB_SESSION_STORAGE_KEY = 'ezity-tab-session';
 
 let documentTabId: string | null = null;
 
@@ -850,7 +850,7 @@ const RECENT_ATTACHMENT_WINDOW_MS = 600_000;
 /** One key per tab, never a shared map. Two tabs beating at the same time would otherwise read
  * the same registry and write back rival snapshots, and the loser of that race disappears until
  * its next beat, long enough for another tab to treat its live draft as abandoned. */
-const TAB_PRESENCE_KEY_PREFIX = 'librechat-live-tab:';
+const TAB_PRESENCE_KEY_PREFIX = 'ezity-live-tab:';
 const TAB_HEARTBEAT_MS = 10_000;
 /** A hidden tab has its timers throttled to roughly one tick a minute, so the gap between two
  * heartbeats of a perfectly healthy background composer is far wider than the interval asks for.

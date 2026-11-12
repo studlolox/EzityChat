@@ -90,7 +90,7 @@ const ASSET_EVENTS = new Map<string, { name: string; level: ClientLogLevel }>([
   ['dynamic-import-error', { name: 'asset.dynamic_import_error', level: 'warn' }],
 ]);
 
-const RECORDS_PLACEHOLDER = '__librechat_log_records__';
+const RECORDS_PLACEHOLDER = '__ezity_log_records__';
 const encoder = new TextEncoder();
 
 function byteLength(text: string): number {
@@ -276,7 +276,7 @@ export function createClientLogExporter(options: ClientLogsOptions): ClientLogEx
         'deployment.environment': options.environment,
         'browser.name': platform.browser,
         'os.type': platform.os,
-        'telemetry.sdk.name': 'librechat-client-logs',
+        'telemetry.sdk.name': 'ezity-client-logs',
         'telemetry.sdk.language': 'webjs',
       }),
     },
@@ -288,7 +288,7 @@ export function createClientLogExporter(options: ClientLogsOptions): ClientLogEx
         ...resource,
         scopeLogs: [
           {
-            scope: { name: 'librechat.client', version: '1' },
+            scope: { name: 'ezity.client', version: '1' },
             logRecords: [RECORDS_PLACEHOLDER],
           },
         ],

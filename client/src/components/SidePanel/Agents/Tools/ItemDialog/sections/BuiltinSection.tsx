@@ -23,9 +23,6 @@ interface Props {
   description?: string;
 }
 
-const ARTIFACTS_CUSTOM_DOCS_URL =
-  'https://www.librechat.ai/docs/features/artifacts#custom-instructions';
-
 const ARTIFACT_MODES: Array<{
   value: string;
   labelKey: TranslationKeys;
@@ -46,7 +43,6 @@ const ARTIFACT_MODES: Array<{
     value: ArtifactModes.CUSTOM,
     labelKey: 'com_ui_artifacts_mode_custom',
     infoKey: 'com_ui_artifacts_mode_custom_info',
-    docs: { url: ARTIFACTS_CUSTOM_DOCS_URL, labelKey: 'com_ui_artifacts_mode_custom_docs' },
   },
 ];
 

@@ -34,7 +34,7 @@ function resolvesToSameOrigin(url: string): boolean {
 }
 
 interface PostLoginRedirectWindow extends Window {
-  __librechatPostLoginRedirect?: string;
+  __ezityPostLoginRedirect?: string;
 }
 
 /**
@@ -51,21 +51,21 @@ const readStoredRedirect = (): string | null => {
   try {
     return window.sessionStorage.getItem(SESSION_KEY);
   } catch {
-    return (window as PostLoginRedirectWindow).__librechatPostLoginRedirect ?? null;
+    return (window as PostLoginRedirectWindow).__ezityPostLoginRedirect ?? null;
   }
 };
 
 const writeStoredRedirect = (value: string): void => {
   try {
     window.sessionStorage.setItem(SESSION_KEY, value);
-    delete (window as PostLoginRedirectWindow).__librechatPostLoginRedirect;
+    delete (window as PostLoginRedirectWindow).__ezityPostLoginRedirect;
   } catch {
-    (window as PostLoginRedirectWindow).__librechatPostLoginRedirect = value;
+    (window as PostLoginRedirectWindow).__ezityPostLoginRedirect = value;
   }
 };
 
 const dropStoredRedirect = (): void => {
-  delete (window as PostLoginRedirectWindow).__librechatPostLoginRedirect;
+  delete (window as PostLoginRedirectWindow).__ezityPostLoginRedirect;
   try {
     window.sessionStorage.removeItem(SESSION_KEY);
   } catch {

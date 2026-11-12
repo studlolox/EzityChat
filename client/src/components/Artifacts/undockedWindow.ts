@@ -15,7 +15,7 @@
  * window — leaving that pane portaled into a document nobody can see. One name
  * per loaded tab keeps them apart while still reusing this tab's own window.
  */
-export const UNDOCKED_ARTIFACTS_WINDOW_NAME = `librechat-artifacts-${Math.random()
+export const UNDOCKED_ARTIFACTS_WINDOW_NAME = `ezity-artifacts-${Math.random()
   .toString(36)
   .slice(2, 10)}`;
 export const UNDOCKED_ARTIFACTS_BOUNDS_KEY = 'artifacts:undocked-window-bounds';

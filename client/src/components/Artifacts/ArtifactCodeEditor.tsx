@@ -64,8 +64,8 @@ const TYPE_MAP: Record<string, string> = {
   'application/vnd.mermaid': 'markdown',
 };
 
-const HIGH_CONTRAST_LIGHT_EDITOR_THEME = 'librechat-high-contrast-light';
-const HIGH_CONTRAST_DARK_EDITOR_THEME = 'librechat-high-contrast-dark';
+const HIGH_CONTRAST_LIGHT_EDITOR_THEME = 'ezity-high-contrast-light';
+const HIGH_CONTRAST_DARK_EDITOR_THEME = 'ezity-high-contrast-dark';
 
 /** Monaco's stock `vs-dark` canvas. `@monaco-editor/react` renders its loading
  *  view transparent, so the wrapper has to paint whatever the active Monaco
