@@ -69,7 +69,7 @@ export default function useChatOptions({
   /** A request outlives the click: the route that matters is the one open when it resolves. */
   const openConvoIdRef = useRef(routeConversationId);
   openConvoIdRef.current = routeConversationId;
-  const exportShare = useExportShare({ isSharedButtonEnabled });
+  const exportShare = useExportShare({ isSharedButtonEnabled, closeMenu });
   const conversation = useRecoilValue(store.conversationByIndex(0));
 
   const conversationId = conversation?.conversationId ?? '';
@@ -232,7 +232,10 @@ export default function useChatOptions({
           { ...projectItem, show: canOrganize },
           {
             label: localize('com_ui_duplicate'),
-            onClick: () => duplicateMutation.mutate({ conversationId }),
+            onClick: () => {
+              duplicateMutation.mutate({ conversationId });
+              closeMenu();
+            },
             icon: <CopyPlus className={iconClass} aria-hidden="true" />,
           },
           { separate: true },
@@ -270,7 +273,12 @@ export default function useChatOptions({
         {showRename && (
           <Rename
             open={showRename}
-            onOpenChange={setShowRename}
+            onOpenChange={(open) => {
+              setShowRename(open);
+              if (!open) {
+                closeMenu();
+              }
+            }}
             conversationId={conversationId}
             title={title}
             titleSetByUser={current?.titleSetByUser === true}

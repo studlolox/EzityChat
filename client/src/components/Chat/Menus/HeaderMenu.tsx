@@ -99,7 +99,10 @@ export default function HeaderMenu({
       id: 'header-compare',
       label: localize('com_ui_add_multi_conversation'),
       icon: <PlusCircle className="text-text-secondary size-4" />,
-      onClick: multiConvo.addConversation,
+      onClick: () => {
+        multiConvo.addConversation();
+        setIsOpen(false);
+      },
     });
   }
 
@@ -108,7 +111,10 @@ export default function HeaderMenu({
       id: 'header-trace',
       label: localize('com_ui_trace_view'),
       icon: <ChartNoAxesGantt className="text-text-secondary size-4" />,
-      onClick: trace.open,
+      onClick: () => {
+        trace.open();
+        setIsOpen(false);
+      },
     });
   }
 

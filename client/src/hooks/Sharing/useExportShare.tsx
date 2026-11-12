@@ -28,8 +28,10 @@ export type UseExportShareResult = {
  */
 export default function useExportShare({
   isSharedButtonEnabled,
+  closeMenu,
 }: {
   isSharedButtonEnabled: boolean;
+  closeMenu?: () => void;
 }): UseExportShareResult {
   const localize = useLocalize();
   const [showExports, setShowExports] = useState(false);
@@ -62,7 +64,10 @@ export default function useExportShare({
   const items: t.MenuItemProps[] = [
     {
       label: 'Canvas Workspace',
-      onClick: () => setCanvasOpen((prev) => !prev),
+      onClick: () => {
+        setCanvasOpen((prev) => !prev);
+        closeMenu?.();
+      },
       icon: <PanelRightOpen className="text-text-secondary size-4" />,
       hideOnClick: true,
       render: (props) => <button {...props} />,
@@ -105,15 +110,26 @@ export default function useExportShare({
       <>
         <ChatFilesDrawer
           open={showFilesDrawer}
-          onOpenChange={setShowFilesDrawer}
+          onOpenChange={(open) => {
+            setShowFilesDrawer(open);
+            if (!open) {
+              closeMenu?.();
+            }
+          }}
           conversation={conversation}
           triggerRef={filesDrawerButtonRef}
+          closeMenu={closeMenu}
         />
         {exportable && (
           <>
             <ExportModal
               open={showExports}
-              onOpenChange={setShowExports}
+              onOpenChange={(open) => {
+                setShowExports(open);
+                if (!open) {
+                  closeMenu?.();
+                }
+              }}
               conversation={conversation}
               triggerRef={exportButtonRef}
               aria-label={localize('com_ui_export_convo_modal')}
@@ -122,7 +138,12 @@ export default function useExportShare({
               triggerRef={shareButtonRef}
               conversationId={conversation?.conversationId ?? ''}
               open={showShareDialog}
-              onOpenChange={setShowShareDialog}
+              onOpenChange={(open) => {
+                setShowShareDialog(open);
+                if (!open) {
+                  closeMenu?.();
+                }
+              }}
             />
           </>
         )}

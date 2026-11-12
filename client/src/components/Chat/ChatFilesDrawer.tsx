@@ -40,6 +40,7 @@ export interface ChatFilesDrawerProps {
   onOpenChange: (open: boolean) => void;
   conversation: TConversation | null;
   triggerRef?: React.RefObject<HTMLElement | null>;
+  closeMenu?: () => void;
 }
 
 interface CanvasDocItem {
@@ -62,6 +63,7 @@ export function ChatFilesDrawer({
   onOpenChange,
   conversation,
   triggerRef,
+  closeMenu,
 }: ChatFilesDrawerProps) {
   const localize = useLocalize();
   const conversationId = conversation?.conversationId ?? '';
@@ -133,6 +135,7 @@ export function ChatFilesDrawer({
     setCanvasMode('document');
     setCanvasOpen(true);
     onOpenChange(false);
+    closeMenu?.();
   };
 
   // Handle opening Mindmap Board
@@ -141,6 +144,7 @@ export function ChatFilesDrawer({
     setCanvasMode('board');
     setCanvasOpen(true);
     onOpenChange(false);
+    closeMenu?.();
   };
 
   // Filter items by search query
@@ -322,7 +326,10 @@ export function ChatFilesDrawer({
                     <div className="flex shrink-0 items-center gap-1.5">
                       <button
                         type="button"
-                        onClick={() => setPreviewFileState({ open: true, file })}
+                        onClick={() => {
+                          setPreviewFileState({ open: true, file });
+                          closeMenu?.();
+                        }}
                         className="hover:bg-surface-tertiary text-text-secondary hover:text-text-primary rounded-lg p-2 transition-colors"
                         title={localize('com_ui_preview_file')}
                       >

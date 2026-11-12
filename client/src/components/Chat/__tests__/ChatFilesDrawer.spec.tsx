@@ -160,4 +160,28 @@ describe('ChatFilesDrawer', () => {
     expect(screen.queryByText('flight-itinerary.pdf')).not.toBeInTheDocument();
     expect(screen.queryByText('Vacation Mindmap')).not.toBeInTheDocument();
   });
+
+  it('calls closeMenu and closes drawer when opening a canvas document', async () => {
+    const mockCloseMenu = jest.fn();
+    const mockOnOpenChange = jest.fn();
+
+    render(
+      <ChatFilesDrawer
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        conversation={mockConversation}
+        closeMenu={mockCloseMenu}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Packing Checklist')).toBeInTheDocument();
+    });
+
+    const openButtons = screen.getAllByText('com_ui_open_in_canvas');
+    fireEvent.click(openButtons[0]);
+
+    expect(mockOnOpenChange).toHaveBeenCalledWith(false);
+    expect(mockCloseMenu).toHaveBeenCalled();
+  });
 });
