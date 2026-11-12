@@ -7,7 +7,9 @@ export type RenderProp<
 
 export interface MenuItemProps {
   id?: string;
+  dataTestId?: string;
   label?: string;
+  title?: string;
   onClick?: (e: React.MouseEvent<HTMLButtonElement | HTMLDivElement>) => void;
   icon?: React.ReactNode;
   kbd?: string;

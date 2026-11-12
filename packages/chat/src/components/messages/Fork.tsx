@@ -344,6 +344,7 @@ function Fork({
         render={
           <Button
             variant={isLast ? 'message-hover' : 'message-hover-reveal'}
+            size="icon"
             data-hover-active={isActive || undefined}
             onClick={(e) => {
               if (rememberGlobal) {

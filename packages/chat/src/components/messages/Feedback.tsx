@@ -142,6 +142,7 @@ function FeedbackButtons({
         render={
           <Button
             variant={isLast ? 'message-hover' : 'message-hover-reveal'}
+            size="icon"
             data-hover-active={feedback?.rating === 'thumbsUp' || undefined}
             onClick={handleThumbsUpClick}
             title={localize('com_ui_feedback_positive')}
@@ -176,6 +177,7 @@ function FeedbackButtons({
         render={
           <Button
             variant={isLast ? 'message-hover' : 'message-hover-reveal'}
+            size="icon"
             data-hover-active={feedback?.rating === 'thumbsDown' || undefined}
             onClick={handleThumbsDownClick}
             title={localize('com_ui_feedback_negative')}
@@ -267,6 +269,7 @@ function Feedback({ isLast = false, handleFeedback, feedback: initialFeedback }:
         render={
           <Button
             variant={isLast ? 'message-hover' : 'message-hover-reveal'}
+            size="icon"
             data-hover-active
             onClick={() => {
               if (isThumbsUp) {

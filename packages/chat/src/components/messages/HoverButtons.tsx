@@ -1,23 +1,43 @@
-import React, { useState, useMemo, useCallback, useContext, memo } from 'react';
+import React, { useState, useMemo, useCallback, useContext, memo, useId } from 'react';
 import { Copy, Check } from 'lucide';
-import { getSpeechText, findMessageById, isUserInitiatedCompaction } from 'librechat-data-provider';
+import * as Ariakit from '@ariakit/react';
+import { GitFork, GitCommit, GitBranchPlus, ListTree, Ellipsis } from 'lucide-react';
+import {
+  ForkOptions,
+  getSpeechText,
+  findMessageById,
+  getTagsForRating,
+  isUserInitiatedCompaction,
+} from 'librechat-data-provider';
 import {
   Button,
   EditIcon,
+  OGDialog,
+  Textarea,
   MorphIcon,
   useLocalize,
+  ThumbUpIcon,
   ContinueIcon,
+  DropdownPopup,
+  OGDialogTitle,
   TooltipAnchor,
+  ThumbDownIcon,
   RegenerateIcon,
+  OGDialogContent,
+  useToastContext,
 } from '@librechat/client';
-import type { TConversation, TMessage, TFeedback } from 'librechat-data-provider';
+import type {
+  TConversation,
+  TMessage,
+  TFeedback,
+  TForkConvoRequest,
+} from 'librechat-data-provider';
 import type { NamedExoticComponent, ReactNode } from 'react';
+import type { MenuItemProps } from '@librechat/client';
 import { MessageAudioSlot, useMessagesHost } from '../../react/messages/host';
 import useGenerationsByLatest from '../../react/messages/generations';
 import { hasEditablePart } from '../../core/parts/editableParts';
 import { ChatContext } from '../../react/chat/context';
-import Feedback from './Feedback';
-import Fork from './Fork';
 
 type THoverButtons = {
   isEditing: boolean;
@@ -69,6 +89,7 @@ const HoverButton = memo(
         render={
           <Button
             variant={reveal ? 'message-hover-reveal' : 'message-hover'}
+            size="icon"
             id={id}
             data-testid={dataTestId}
             data-hover-active={isActive || undefined}
@@ -86,6 +107,18 @@ const HoverButton = memo(
 
 HoverButton.displayName = 'HoverButton';
 
+function isRateLimited(error: unknown): boolean {
+  if (typeof error !== 'object' || error == null) {
+    return false;
+  }
+  const { status, statusCode, response } = error as {
+    status?: number;
+    statusCode?: number;
+    response?: { status?: number };
+  };
+  return response?.status === 429 || status === 429 || statusCode === 429;
+}
+
 const HoverButtons = ({
   index,
   isEditing,
@@ -102,13 +135,22 @@ const HoverButtons = ({
   handleFeedback,
 }: THoverButtons): ReactNode => {
   const localize = useLocalize();
+  const { showToast } = useToastContext();
   /** Read from the pane's chat contract here rather than passed down: a send toggles the
    *  rerun controls on every row, and only this toolbar has to re-render for it. */
   const isSubmitting = useContext(ChatContext)?.isSubmitting === true;
   const [isCopied, setIsCopied] = useState(false);
-  const { useGetMessages, useHasPendingTurn } = useMessagesHost();
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [openFeedbackDialog, setOpenFeedbackDialog] = useState(false);
+  const [feedbackText, setFeedbackText] = useState(message.feedback?.text ?? '');
+  const moreMenuId = useId();
+
+  const host = useMessagesHost();
+  const { useGetMessages, useHasPendingTurn } = host;
   const getMessages = useGetMessages();
   const hasPendingTurn = useHasPendingTurn(conversation?.conversationId ?? '');
+  const forkConversation = host.useForkConversation();
+  const { option: forkSetting, splitAtTarget } = host.useForkPreferences();
 
   const endpoint = useMemo(() => {
     if (!conversation) {
@@ -117,15 +159,7 @@ const HoverButtons = ({
     return conversation.endpointType ?? conversation.endpoint;
   }, [conversation]);
 
-  /** Which turn a rerun would replay, resolved for a model turn only. The lookup
-   *  goes through the messages array's memoized id index, so a conversation is
-   *  indexed once for all its rows rather than scanned once per row, and the memo
-   *  is keyed on the parent id: `getMessages` is a cache read, not a subscription,
-   *  and a parent's authorship never changes. Outside the messages view (a search
-   *  row) the thread is unavailable and the answer stays unknown; with the thread
-   *  in hand a parent that does not resolve is absent (an imported reply the
-   *  lineage left at the root) and there is no turn to replay, which `regenerate`
-   *  can only log about once the button is pressed. */
+  /** Which turn a rerun would replay, resolved for a model turn only. */
   const parentIsUserMessage = useMemo(() => {
     if (message.isCreatedByUser === true) {
       return undefined;
@@ -172,12 +206,276 @@ const HoverButtons = ({
     [isActiveStreamingMessage, getCanCopy],
   );
 
+  const startFork = useCallback(
+    (option: string) => {
+      if (forkConversation == null || !conversation?.conversationId) {
+        return;
+      }
+      showToast({ message: localize('com_ui_fork_processing'), status: 'info' });
+      const request: TForkConvoRequest = {
+        messageId: message.messageId,
+        conversationId: conversation.conversationId,
+        option,
+        splitAtTarget,
+        latestMessageId: getLatestMessageId?.() ?? latestMessageId,
+      };
+      forkConversation(request, {
+        onSuccess: () => showToast({ message: localize('com_ui_fork_success'), status: 'success' }),
+        onError: (error) =>
+          showToast({
+            message: isRateLimited(error)
+              ? localize('com_ui_fork_error_rate_limit')
+              : localize('com_ui_fork_error'),
+            status: 'error',
+          }),
+      });
+    },
+    [
+      conversation?.conversationId,
+      forkConversation,
+      getLatestMessageId,
+      latestMessageId,
+      localize,
+      message.messageId,
+      showToast,
+      splitAtTarget,
+    ],
+  );
+
+  const handleFeedbackDialogSave = () => {
+    if (!handleFeedback) {
+      return;
+    }
+    handleFeedback({
+      feedback: {
+        rating: message.feedback?.rating ?? 'thumbsDown',
+        tag: message.feedback?.tag,
+        text: feedbackText,
+      },
+    });
+    setOpenFeedbackDialog(false);
+  };
+
+  const handleFeedbackDialogClear = () => {
+    if (!handleFeedback) {
+      return;
+    }
+    if (message.feedback?.rating) {
+      handleFeedback({
+        feedback: {
+          rating: message.feedback.rating,
+          tag: message.feedback.tag,
+        },
+      });
+    } else {
+      handleFeedback({ feedback: undefined });
+    }
+    setFeedbackText('');
+    setOpenFeedbackDialog(false);
+  };
+
+  const { isCreatedByUser, error } = message;
+  const isSubagentThreadReadOnly = conversation?.subagentThread != null;
+
+  const moreMenuItems = useMemo<MenuItemProps[]>(() => {
+    const items: MenuItemProps[] = [];
+
+    // Regenerate
+    if (!isSubagentThreadReadOnly && regenerateEnabled) {
+      items.push({
+        id: 'regenerate-generation-button',
+        dataTestId: 'regenerate-generation-button',
+        label: localize('com_ui_regenerate'),
+        title: localize('com_ui_regenerate'),
+        icon: <RegenerateIcon size="19" />,
+        onClick: regenerate,
+      });
+    }
+
+    // Continue
+    if (!isSubagentThreadReadOnly && continueSupported) {
+      items.push({
+        id: 'continue-generation-button',
+        dataTestId: 'continue-generation-button',
+        label: localize('com_ui_continue'),
+        title: localize('com_ui_continue'),
+        icon: <ContinueIcon className="size-4.75" />,
+        onClick: (e) => e && handleContinue(e as unknown as React.MouseEvent<HTMLButtonElement>),
+      });
+    }
+
+    // Fork
+    if (!error && !isActiveStreamingMessage && forkingSupported && forkConversation != null) {
+      items.push({
+        id: 'fork-message-button',
+        dataTestId: 'fork-message-button',
+        label: localize('com_ui_fork') || 'Fork',
+        title: localize('com_ui_fork') || 'Fork',
+        icon: <GitFork className="size-4" />,
+        onClick: () => startFork(forkSetting),
+        subItems: [
+          {
+            id: 'fork-visible',
+            label: localize('com_ui_fork_visible'),
+            title: localize('com_ui_fork_visible'),
+            icon: <GitCommit className="size-4 rotate-90" />,
+            onClick: () => startFork(ForkOptions.DIRECT_PATH),
+          },
+          {
+            id: 'fork-branches',
+            label: localize('com_ui_fork_branches'),
+            title: localize('com_ui_fork_branches'),
+            icon: <GitBranchPlus className="size-4 rotate-180" />,
+            onClick: () => startFork(ForkOptions.INCLUDE_BRANCHES),
+          },
+          {
+            id: 'fork-all-target',
+            label: `${localize('com_ui_fork_all_target')} (${localize('com_endpoint_default')})`,
+            title: `${localize('com_ui_fork_all_target')} (${localize('com_endpoint_default')})`,
+            icon: <ListTree className="size-4" />,
+            onClick: () => startFork(ForkOptions.TARGET_LEVEL),
+          },
+        ],
+      });
+    }
+
+    // Feedback
+    if (!error && !isActiveStreamingMessage && !isCreatedByUser && handleFeedback != null) {
+      if (items.length > 0) {
+        items.push({ separate: true });
+      }
+
+      const isThumbsUp = message.feedback?.rating === 'thumbsUp';
+      const isThumbsDown = message.feedback?.rating === 'thumbsDown';
+
+      const positiveTags = getTagsForRating('thumbsUp');
+      const negativeTags = getTagsForRating('thumbsDown');
+
+      const positiveSubItems: MenuItemProps[] = [
+        {
+          id: 'thumbs-up-quick',
+          label: `${localize('com_ui_feedback_positive')} 👍`,
+          title: localize('com_ui_feedback_positive'),
+          onClick: () => {
+            if (isThumbsUp && !message.feedback?.tag) {
+              handleFeedback({ feedback: undefined });
+            } else {
+              handleFeedback({ feedback: { rating: 'thumbsUp', tag: undefined } });
+            }
+          },
+        },
+        ...positiveTags.map((tag) => ({
+          id: `thumbs-up-tag-${tag.key}`,
+          label: localize(tag.label as Parameters<typeof localize>[0]),
+          title: localize(tag.label as Parameters<typeof localize>[0]),
+          ariaChecked: isThumbsUp && message.feedback?.tag?.key === tag.key,
+          ariaRole: 'menuitemcheckbox' as const,
+          onClick: () => {
+            handleFeedback({
+              feedback: {
+                rating: 'thumbsUp',
+                tag,
+              },
+            });
+          },
+        })),
+        {
+          id: 'thumbs-up-more-info',
+          label: `${localize('com_ui_feedback_more_information')}...`,
+          title: localize('com_ui_feedback_more_information'),
+          onClick: () => {
+            setFeedbackText(message.feedback?.text ?? '');
+            setOpenFeedbackDialog(true);
+          },
+        },
+      ];
+
+      const negativeSubItems: MenuItemProps[] = [
+        {
+          id: 'thumbs-down-quick',
+          label: `${localize('com_ui_feedback_negative')} 👎`,
+          title: localize('com_ui_feedback_negative'),
+          onClick: () => {
+            if (isThumbsDown && !message.feedback?.tag) {
+              handleFeedback({ feedback: undefined });
+            } else {
+              handleFeedback({ feedback: { rating: 'thumbsDown', tag: undefined } });
+            }
+          },
+        },
+        ...negativeTags.map((tag) => ({
+          id: `thumbs-down-tag-${tag.key}`,
+          label: localize(tag.label as Parameters<typeof localize>[0]),
+          title: localize(tag.label as Parameters<typeof localize>[0]),
+          ariaChecked: isThumbsDown && message.feedback?.tag?.key === tag.key,
+          ariaRole: 'menuitemcheckbox' as const,
+          onClick: () => {
+            handleFeedback({
+              feedback: {
+                rating: 'thumbsDown',
+                tag,
+              },
+            });
+          },
+        })),
+        {
+          id: 'thumbs-down-more-info',
+          label: `${localize('com_ui_feedback_more_information')}...`,
+          title: localize('com_ui_feedback_more_information'),
+          onClick: () => {
+            setFeedbackText(message.feedback?.text ?? '');
+            setOpenFeedbackDialog(true);
+          },
+        },
+      ];
+
+      items.push({
+        id: 'feedback-thumbs-up',
+        dataTestId: 'feedback-thumbs-up',
+        label: localize('com_ui_feedback_positive'),
+        title: localize('com_ui_feedback_positive'),
+        ariaLabel: localize('com_ui_feedback_positive'),
+        icon: <ThumbUpIcon size="1.1875rem" />,
+        ariaChecked: isThumbsUp,
+        ariaRole: 'menuitemcheckbox',
+        subItems: positiveSubItems,
+      });
+
+      items.push({
+        id: 'feedback-thumbs-down',
+        dataTestId: 'feedback-thumbs-down',
+        label: localize('com_ui_feedback_negative'),
+        title: localize('com_ui_feedback_negative'),
+        ariaLabel: localize('com_ui_feedback_negative'),
+        icon: <ThumbDownIcon size="1.1875rem" />,
+        ariaChecked: isThumbsDown,
+        ariaRole: 'menuitemcheckbox',
+        subItems: negativeSubItems,
+      });
+    }
+
+    return items;
+  }, [
+    isSubagentThreadReadOnly,
+    regenerateEnabled,
+    localize,
+    regenerate,
+    continueSupported,
+    handleContinue,
+    error,
+    isActiveStreamingMessage,
+    forkingSupported,
+    forkConversation,
+    startFork,
+    forkSetting,
+    isCreatedByUser,
+    handleFeedback,
+    message.feedback,
+  ]);
+
   if (!conversation) {
     return null;
   }
-
-  const { isCreatedByUser, error } = message;
-  const isSubagentThreadReadOnly = conversation.subagentThread != null;
 
   const onEdit = () => {
     if (isEditing) {
@@ -238,43 +536,70 @@ const HoverButtons = ({
         />
       )}
 
-      {/* Fork Button: withheld on a failed turn, whose copy would carry the provider's error as an
-          ordinary answer. The error card's "Branch without files" copies up to the turn before. */}
-      {!error && !isActiveStreamingMessage && (
-        <Fork
-          messageId={message.messageId}
-          conversationId={conversation.conversationId}
-          forkingSupported={forkingSupported}
-          getLatestMessageId={getLatestMessageId ?? (() => latestMessageId)}
-          isLast={isLast}
+      {/* More Options Dropdown Menu */}
+      {moreMenuItems.length > 0 && (
+        <DropdownPopup
+          portal={true}
+          menuId={moreMenuId}
+          focusLoop={true}
+          unmountOnHide={false}
+          isOpen={isMoreOpen}
+          setIsOpen={setIsMoreOpen}
+          items={moreMenuItems}
+          trigger={
+            <TooltipAnchor
+              description={localize('com_ui_more_options')}
+              render={
+                <Ariakit.MenuButton
+                  id={`more-menu-${message.messageId}`}
+                  data-testid="message-more-menu-button"
+                  aria-label={localize('com_ui_more_options')}
+                  aria-expanded={isMoreOpen}
+                  render={
+                    <Button
+                      variant={!isLast ? 'message-hover-reveal' : 'message-hover'}
+                      size="icon"
+                      data-hover-active={isMoreOpen || undefined}
+                    >
+                      <Ellipsis className="size-4" aria-hidden="true" />
+                    </Button>
+                  }
+                />
+              }
+            />
+          }
         />
       )}
 
-      {/* Feedback Buttons */}
-      {!error && !isActiveStreamingMessage && !isCreatedByUser && handleFeedback != null && (
-        <Feedback handleFeedback={handleFeedback} feedback={message.feedback} isLast={isLast} />
-      )}
-
-      {/* Regenerate Button */}
-      {!isSubagentThreadReadOnly && regenerateEnabled && (
-        <HoverButton
-          onClick={regenerate}
-          title={localize('com_ui_regenerate')}
-          icon={<RegenerateIcon size="19" />}
-          isLast={isLast}
-          dataTestId={isLast ? 'regenerate-generation-button' : undefined}
-        />
-      )}
-
-      {/* Continue Button */}
-      {!isSubagentThreadReadOnly && continueSupported && (
-        <HoverButton
-          onClick={(e) => e && handleContinue(e)}
-          title={localize('com_ui_continue')}
-          icon={<ContinueIcon className="size-4.75" />}
-          isLast={isLast}
-          dataTestId={isLast ? 'continue-generation-button' : undefined}
-        />
+      {/* Feedback Text Modal */}
+      {openFeedbackDialog && (
+        <OGDialog open={openFeedbackDialog} onOpenChange={setOpenFeedbackDialog}>
+          <OGDialogContent className="w-11/12 max-w-lg">
+            <OGDialogTitle className="text-lg leading-6 font-semibold">
+              {localize('com_ui_feedback_more_information')}
+            </OGDialogTitle>
+            <Textarea
+              variant="note"
+              value={feedbackText}
+              onChange={(e) => setFeedbackText(e.target.value)}
+              rows={4}
+              placeholder={localize('com_ui_feedback_placeholder')}
+              maxLength={500}
+            />
+            <div className="mt-4 flex items-end justify-end gap-2">
+              <Button variant="destructive" onClick={handleFeedbackDialogClear}>
+                {localize('com_ui_delete')}
+              </Button>
+              <Button
+                variant="submit"
+                onClick={handleFeedbackDialogSave}
+                disabled={!feedbackText.trim()}
+              >
+                {localize('com_ui_save')}
+              </Button>
+            </div>
+          </OGDialogContent>
+        </OGDialog>
       )}
     </div>
   );

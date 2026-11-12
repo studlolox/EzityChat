@@ -392,7 +392,12 @@ const buttonVariantRecipe = cva(
       {
         variant: ['message-hover', 'message-hover-reveal'],
         size: 'default',
-        class: 'size-auto p-1.5',
+        class: 'size-auto p-1.5 px-1.5 py-1.5 flex items-center justify-center aspect-square',
+      },
+      {
+        variant: ['message-hover', 'message-hover-reveal'],
+        size: 'icon',
+        class: 'size-8 p-0 aspect-square flex items-center justify-center',
       },
       { variant: 'popover-option', size: 'default', class: 'h-auto p-2' },
       { variant: 'inline-link', size: 'default', class: 'h-auto p-0' },

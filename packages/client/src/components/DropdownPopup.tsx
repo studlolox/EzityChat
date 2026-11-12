@@ -155,6 +155,8 @@ const Menu: React.FC<MenuProps> = ({
             <Ariakit.MenuItem
               key={itemKey(item, index)}
               id={item.id}
+              data-testid={item.dataTestId ?? item.id}
+              title={item.title ?? (typeof item.label === 'string' ? item.label : undefined)}
               className={cn(
                 'group text-text-primary hover:bg-surface-hover focus:bg-surface-hover flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-3.5 text-sm outline-hidden md:px-2.5 md:py-2',
                 disabledInkClasses,

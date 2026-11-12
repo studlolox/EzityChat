@@ -1,7 +1,7 @@
 import React from 'react';
+import { RecoilRoot } from 'recoil';
 import { MemoryRouter } from 'react-router-dom';
 import { ChatContext } from '@librechat/chat/react';
-import { RecoilRoot, type MutableSnapshot } from 'recoil';
 import { HoverButtons } from '@librechat/chat/components';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -13,6 +13,7 @@ import {
   type TMessage,
 } from 'librechat-data-provider';
 import type { ChatContract } from '@librechat/chat/react';
+import type { MutableSnapshot } from 'recoil';
 import {
   MessagesOperationsContext,
   type MessagesOperations,
