@@ -108,4 +108,127 @@ describe('DialogImage tooltips', () => {
       }),
     );
   });
+
+  it('renders touch-none on the container to prevent native browser page zoom', () => {
+    render(
+      <DialogImage isOpen onOpenChange={jest.fn()} src="/media.png" downloadImage={jest.fn()} />,
+    );
+
+    const img = screen.getByAltText('Image');
+    const container = img.closest('.relative.touch-none');
+    expect(container).toBeInTheDocument();
+  });
+
+  it('toggles zoom on double-tap touch', () => {
+    render(
+      <DialogImage isOpen onOpenChange={jest.fn()} src="/media.png" downloadImage={jest.fn()} />,
+    );
+
+    const img = screen.getByAltText('Image');
+    const container = img.closest('.relative.touch-none') as HTMLElement;
+    expect(container).not.toBeNull();
+
+    const touchPoint = { clientX: 100, clientY: 100 };
+
+    // First tap
+    act(() => {
+      fireEvent.touchStart(container, {
+        touches: [touchPoint],
+        targetTouches: [touchPoint],
+        changedTouches: [touchPoint],
+      });
+    });
+
+    // Quick second tap (double-tap)
+    act(() => {
+      fireEvent.touchStart(container, {
+        touches: [touchPoint],
+        targetTouches: [touchPoint],
+        changedTouches: [touchPoint],
+      });
+    });
+
+    const wrapper = img.parentElement;
+    expect(wrapper?.getAttribute('style')).toContain('scale(2)');
+
+    // Double tap again to reset zoom
+    act(() => {
+      fireEvent.touchStart(container, {
+        touches: [touchPoint],
+        targetTouches: [touchPoint],
+        changedTouches: [touchPoint],
+      });
+    });
+    act(() => {
+      fireEvent.touchStart(container, {
+        touches: [touchPoint],
+        targetTouches: [touchPoint],
+        changedTouches: [touchPoint],
+      });
+    });
+
+    expect(wrapper?.getAttribute('style')).toContain('scale(1)');
+  });
+
+  it('handles two-finger pinch-to-zoom and one-finger pan on touch', () => {
+    render(
+      <DialogImage isOpen onOpenChange={jest.fn()} src="/media.png" downloadImage={jest.fn()} />,
+    );
+
+    const img = screen.getByAltText('Image');
+    const container = img.closest('.relative.touch-none') as HTMLElement;
+
+    const t1 = { clientX: 100, clientY: 100 };
+    const t2 = { clientX: 200, clientY: 100 };
+
+    // Start 2-finger pinch with distance 100
+    act(() => {
+      fireEvent.touchStart(container, {
+        touches: [t1, t2],
+        targetTouches: [t1, t2],
+        changedTouches: [t1, t2],
+      });
+    });
+
+    // Move fingers apart to distance 200 (2x scale)
+    const moveEvent = new Event('touchmove', { cancelable: true }) as unknown as TouchEvent & {
+      touches: Array<{ clientX: number; clientY: number }>;
+    };
+    Object.defineProperty(moveEvent, 'touches', {
+      value: [
+        { clientX: 50, clientY: 100 },
+        { clientX: 250, clientY: 100 },
+      ],
+    });
+    act(() => {
+      container.dispatchEvent(moveEvent);
+    });
+
+    const wrapper = img.parentElement;
+    expect(wrapper?.getAttribute('style')).toContain('scale(2)');
+    expect(moveEvent.defaultPrevented).toBe(true);
+
+    // Release fingers down to 1 finger for panning
+    const singleTouch = { clientX: 150, clientY: 100 };
+    act(() => {
+      fireEvent.touchEnd(container, {
+        touches: [singleTouch],
+        targetTouches: [singleTouch],
+        changedTouches: [singleTouch],
+      });
+    });
+
+    // Pan with the remaining finger
+    const panEvent = new Event('touchmove', { cancelable: true }) as unknown as TouchEvent & {
+      touches: Array<{ clientX: number; clientY: number }>;
+    };
+    Object.defineProperty(panEvent, 'touches', {
+      value: [{ clientX: 170, clientY: 120 }],
+    });
+    act(() => {
+      container.dispatchEvent(panEvent);
+    });
+
+    expect(panEvent.defaultPrevented).toBe(true);
+  });
 });

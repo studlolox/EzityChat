@@ -97,8 +97,24 @@ export default function DialogImage({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
+  // Refs for tracking fresh state in touch handlers
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+  const panXRef = useRef(panX);
+  panXRef.current = panX;
+  const panYRef = useRef(panY);
+  panYRef.current = panY;
+
+  // Touch gesture tracking for mobile pinch-to-zoom and pan
+  const lastPinchDistRef = useRef<number | null>(null);
+  const lastPinchMidpointRef = useRef<{ x: number; y: number } | null>(null);
+  const touchPanStartRef = useRef<{ x: number; y: number } | null>(null);
+  const lastTapTimeRef = useRef<number>(0);
+
   // Inpainting & Visual Studio state
   const [isMaskingMode, setIsMaskingMode] = useState(false);
+  const isMaskingModeRef = useRef(isMaskingMode);
+  isMaskingModeRef.current = isMaskingMode;
   const [maskTool, setMaskTool] = useState<'brush' | 'eraser'>('brush');
   const [brushSize, setBrushSize] = useState(32);
   const [strokes, setStrokes] = useState<MaskStroke[]>([]);
@@ -106,7 +122,7 @@ export default function DialogImage({
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -170,14 +186,28 @@ export default function DialogImage({
     return isDragging ? 'cursor-grabbing' : 'cursor-grab';
   };
 
-  const handleDoubleClick = useCallback(() => {
-    if (isMaskingMode) return;
-    if (zoom > 1) {
-      resetZoom();
-    } else {
-      setZoom(2);
-    }
-  }, [isMaskingMode, zoom, resetZoom]);
+  const handleDoubleClick = useCallback(
+    (e?: React.MouseEvent<HTMLDivElement>) => {
+      if (isMaskingMode) return;
+      if (zoom > 1) {
+        resetZoom();
+      } else if (e && containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        const containerCenterX = rect.width / 2;
+        const containerCenterY = rect.height / 2;
+        const deltaX = (mouseX - containerCenterX) * (2 - 1);
+        const deltaY = (mouseY - containerCenterY) * (2 - 1);
+        setZoom(2);
+        setPanX(-deltaX);
+        setPanY(-deltaY);
+      } else {
+        setZoom(2);
+      }
+    },
+    [isMaskingMode, zoom, resetZoom],
+  );
 
   const handleWheel = useCallback(
     (e: React.WheelEvent<HTMLDivElement>) => {
@@ -242,6 +272,191 @@ export default function DialogImage({
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
   }, []);
+
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent<HTMLDivElement> | TouchEvent) => {
+      if (isMaskingModeRef.current) return;
+
+      if (e.touches.length === 2) {
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const dist = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
+        lastPinchDistRef.current = dist;
+
+        if (containerRef.current) {
+          const rect = containerRef.current.getBoundingClientRect();
+          lastPinchMidpointRef.current = {
+            x: (touch1.clientX + touch2.clientX) / 2 - rect.left,
+            y: (touch1.clientY + touch2.clientY) / 2 - rect.top,
+          };
+        }
+        touchPanStartRef.current = null;
+        setIsDragging(false);
+      } else if (e.touches.length === 1) {
+        lastPinchDistRef.current = null;
+        lastPinchMidpointRef.current = null;
+
+        const touch = e.touches[0];
+        const now = Date.now();
+        // Double-tap detection for mobile
+        if (now - lastTapTimeRef.current < 300) {
+          lastTapTimeRef.current = 0;
+          if (zoomRef.current > 1) {
+            resetZoom();
+          } else if (containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            const tapX = touch.clientX - rect.left;
+            const tapY = touch.clientY - rect.top;
+            const containerCenterX = rect.width / 2;
+            const containerCenterY = rect.height / 2;
+            const deltaX = (tapX - containerCenterX) * (2 - 1);
+            const deltaY = (tapY - containerCenterY) * (2 - 1);
+            setZoom(2);
+            setPanX(-deltaX);
+            setPanY(-deltaY);
+          } else {
+            setZoom(2);
+          }
+          return;
+        }
+        lastTapTimeRef.current = now;
+
+        if (zoomRef.current > 1) {
+          touchPanStartRef.current = {
+            x: touch.clientX - panXRef.current,
+            y: touch.clientY - panYRef.current,
+          };
+          setIsDragging(true);
+        }
+      }
+    },
+    [resetZoom],
+  );
+
+  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement> | TouchEvent) => {
+    if (isMaskingModeRef.current) return;
+
+    if (e.touches.length === 2) {
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const currentDist = Math.hypot(
+        touch2.clientX - touch1.clientX,
+        touch2.clientY - touch1.clientY,
+      );
+
+      if (!containerRef.current || !lastPinchDistRef.current || lastPinchDistRef.current <= 0) {
+        lastPinchDistRef.current = currentDist;
+        return;
+      }
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const currentMidX = (touch1.clientX + touch2.clientX) / 2 - rect.left;
+      const currentMidY = (touch1.clientY + touch2.clientY) / 2 - rect.top;
+
+      const deltaScale = currentDist / lastPinchDistRef.current;
+      lastPinchDistRef.current = currentDist;
+
+      const prevZoom = zoomRef.current;
+      const newZoom = Math.min(Math.max(prevZoom * deltaScale, 1), 5);
+
+      if (newZoom === 1) {
+        setZoom(1);
+        setPanX(0);
+        setPanY(0);
+        lastPinchMidpointRef.current = { x: currentMidX, y: currentMidY };
+        return;
+      }
+
+      const containerCenterX = rect.width / 2;
+      const containerCenterY = rect.height / 2;
+
+      const zoomRatio = newZoom / prevZoom;
+      const deltaX = (currentMidX - containerCenterX - panXRef.current) * (zoomRatio - 1);
+      const deltaY = (currentMidY - containerCenterY - panYRef.current) * (zoomRatio - 1);
+
+      const lastMid = lastPinchMidpointRef.current ?? { x: currentMidX, y: currentMidY };
+      const midDeltaX = currentMidX - lastMid.x;
+      const midDeltaY = currentMidY - lastMid.y;
+      lastPinchMidpointRef.current = { x: currentMidX, y: currentMidY };
+
+      setZoom(newZoom);
+      setPanX((prev) => prev - deltaX + midDeltaX);
+      setPanY((prev) => prev - deltaY + midDeltaY);
+    } else if (e.touches.length === 1 && touchPanStartRef.current && zoomRef.current > 1) {
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+      const touch = e.touches[0];
+      const newPanX = touch.clientX - touchPanStartRef.current.x;
+      const newPanY = touch.clientY - touchPanStartRef.current.y;
+      setPanX(newPanX);
+      setPanY(newPanY);
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLDivElement> | TouchEvent) => {
+    if (isMaskingModeRef.current) return;
+
+    if (e.touches.length === 0) {
+      lastPinchDistRef.current = null;
+      lastPinchMidpointRef.current = null;
+      touchPanStartRef.current = null;
+      setIsDragging(false);
+    } else if (e.touches.length === 1) {
+      lastPinchDistRef.current = null;
+      lastPinchMidpointRef.current = null;
+      if (zoomRef.current > 1) {
+        const touch = e.touches[0];
+        touchPanStartRef.current = {
+          x: touch.clientX - panXRef.current,
+          y: touch.clientY - panYRef.current,
+        };
+        setIsDragging(true);
+      } else {
+        touchPanStartRef.current = null;
+        setIsDragging(false);
+      }
+    }
+  }, []);
+
+  const cleanupRef = useRef<(() => void) | null>(null);
+
+  const attachContainerRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      cleanupRef.current?.();
+      cleanupRef.current = null;
+      containerRef.current = node;
+      if (!node) return;
+
+      const preventGesture = (e: Event) => {
+        e.preventDefault();
+      };
+
+      const onTouchStart = (e: TouchEvent) => handleTouchStart(e);
+      const onTouchMove = (e: TouchEvent) => handleTouchMove(e);
+      const onTouchEnd = (e: TouchEvent) => handleTouchEnd(e);
+
+      node.addEventListener('touchstart', onTouchStart, { passive: true });
+      node.addEventListener('touchmove', onTouchMove, { passive: false });
+      node.addEventListener('touchend', onTouchEnd, { passive: true });
+      node.addEventListener('touchcancel', onTouchEnd, { passive: true });
+      node.addEventListener('gesturestart', preventGesture);
+      node.addEventListener('gesturechange', preventGesture);
+
+      cleanupRef.current = () => {
+        node.removeEventListener('touchstart', onTouchStart);
+        node.removeEventListener('touchmove', onTouchMove);
+        node.removeEventListener('touchend', onTouchEnd);
+        node.removeEventListener('touchcancel', onTouchEnd);
+        node.removeEventListener('gesturestart', preventGesture);
+        node.removeEventListener('gesturechange', preventGesture);
+      };
+    },
+    [handleTouchStart, handleTouchMove, handleTouchEnd],
+  );
 
   // Stroke rendering function (handles both visual overlay and offscreen binary export)
   const renderStrokes = useCallback(
@@ -578,7 +793,7 @@ export default function DialogImage({
     <DialogPrimitive.Root open={isOpen} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay
-          className="bg-surface-media-overlay/90 fixed inset-0 z-[250]"
+          className="bg-surface-media-overlay/90 fixed inset-0 z-[250] touch-none"
           onClick={handleBackgroundClick}
         />
         <DialogPrimitive.Content
@@ -849,8 +1064,8 @@ export default function DialogImage({
             onClick={(e) => e.stopPropagation()}
           >
             <div
-              ref={containerRef}
-              className={`relative ${getCursorClass()}`}
+              ref={attachContainerRef}
+              className={`relative touch-none ${getCursorClass()}`}
               onWheel={handleWheel}
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
@@ -939,7 +1154,7 @@ export default function DialogImage({
           {showDetails && !isMaskingMode && (
             <div
               data-side-panel
-              className={`bg-surface-primary border-text-on-media/10 fixed inset-e-0 top-0 z-30 h-full w-80 max-w-full transform border-s shadow-2xl transition-transform duration-300 ${
+              className={`bg-surface-primary border-text-on-media/10 fixed inset-e-0 top-0 z-30 h-full w-80 max-w-full transform touch-pan-y border-s shadow-2xl transition-transform duration-300 ${
                 isPromptOpen ? 'translate-x-0' : 'translate-x-full rtl:-translate-x-full'
               }`}
               onClick={(e) => e.stopPropagation()}
