@@ -14,6 +14,7 @@ import {
   useMessagesRetention,
   useAssistantsMap,
   useUnseenConversations,
+  useVirtualKeyboard,
 } from '~/hooks';
 import {
   PromptGroupsProvider,
@@ -150,6 +151,7 @@ function RootLayout() {
   );
 
   useSearchEnabled(isAuthenticated);
+  useVirtualKeyboard();
 
   useEffect(() => {
     if (termsData) {
@@ -186,7 +188,12 @@ function RootLayout() {
             <AgentsMapContext.Provider value={agentsMap}>
               <PromptGroupsProvider>
                 <Banner onHeightChange={setBannerHeight} />
-                <div className="flex" style={{ height: `calc(100dvh - ${bannerHeight}px)` }}>
+                <div
+                  className="flex"
+                  style={{
+                    height: `calc(var(--visual-viewport-height, 100dvh) - ${bannerHeight}px)`,
+                  }}
+                >
                   <div
                     className="relative z-0 flex h-full w-full overflow-hidden"
                     /** Drawer width also defines the uncovered dismiss strip. */

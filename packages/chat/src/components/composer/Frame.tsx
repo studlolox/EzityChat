@@ -91,7 +91,7 @@ export default function ComposerFrame({
       dir={direction === 'auto' ? undefined : direction}
       onSubmit={onSubmit}
       className={cn(
-        'mx-auto flex w-full flex-row gap-3 sm:px-2',
+        'mx-auto flex w-full flex-row gap-3 px-2 sm:px-2',
         composerPlacementTransition(),
         maximizeChatSpace ? 'max-w-full' : 'md:max-w-3xl xl:max-w-4xl',
         clearanceClassName,
@@ -118,9 +118,7 @@ export default function ComposerFrame({
               data-testid="composer-surface"
               onClick={handleSurfaceClick}
               className={cn(
-                /* Squared off at the bottom below `sm`, where the surface runs to the viewport
-                   floor and the action row is the last thing in it. */
-                'rounded-t-theme-surface-lg sm:rounded-theme-surface-lg relative flex w-full grow flex-col overflow-hidden',
+                'rounded-theme-surface-lg relative flex w-full grow flex-col overflow-hidden',
                 composerSurfaceClasses(),
                 focused ? composerSurfaceShadow.focused : composerSurfaceShadow.blurred,
                 /* The temporary accent layers a series-6 tint over the opaque surface, at half

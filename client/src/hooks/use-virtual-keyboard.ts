@@ -53,8 +53,8 @@ export function useVirtualKeyboard(options?: UseVirtualKeyboardOptions) {
 
     if (vv) {
       const isShrunk =
-        window.innerHeight - vv.height > 80 || window.screen.height - vv.height > 120;
-      const keyboardOpen = isShrunk || isInputFocused;
+        window.innerHeight - vv.height > 60 || window.screen.height - vv.height > 100;
+      const keyboardOpen = isShrunk && isInputFocused;
       setIsKeyboardOpen(keyboardOpen);
       if (keyboardOpen) {
         setViewportHeight(vv.height);
@@ -92,6 +92,9 @@ export function useVirtualKeyboard(options?: UseVirtualKeyboardOptions) {
         setIsKeyboardOpen(true);
       }
       checkKeyboard();
+      setTimeout(checkKeyboard, 50);
+      setTimeout(checkKeyboard, 150);
+      setTimeout(checkKeyboard, 300);
     };
 
     const handleFocusOut = () => {
@@ -107,10 +110,17 @@ export function useVirtualKeyboard(options?: UseVirtualKeyboardOptions) {
       }
     };
 
+    const handleWindowScroll = () => {
+      if (window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+      }
+    };
+
     const vv = window.visualViewport;
     if (vv && checkIsTouch()) {
       vv.addEventListener('resize', handleVisualViewportChange);
       vv.addEventListener('scroll', handleVisualViewportChange);
+      window.addEventListener('scroll', handleWindowScroll, { passive: true });
       checkKeyboard();
     }
 
@@ -121,6 +131,7 @@ export function useVirtualKeyboard(options?: UseVirtualKeyboardOptions) {
       if (vv) {
         vv.removeEventListener('resize', handleVisualViewportChange);
         vv.removeEventListener('scroll', handleVisualViewportChange);
+        window.removeEventListener('scroll', handleWindowScroll);
       }
       document.removeEventListener('focusin', handleFocusIn, { capture: true });
       document.removeEventListener('focusout', handleFocusOut, { capture: true });
