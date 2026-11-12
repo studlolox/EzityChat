@@ -93,23 +93,26 @@ export default function LibraryFileDetailsModal({
 
   return (
     <OGDialog open={open} onOpenChange={onOpenChange}>
-      <OGDialogContent className="max-w-lg">
-        <OGDialogHeader className="flex flex-row items-center gap-3 pb-4">
-          <div className="bg-surface-tertiary ring-border-chrome flex size-12 shrink-0 items-center justify-center rounded-xl ring-1">
+      <OGDialogContent className="flex max-h-[85dvh] max-w-lg flex-col overflow-hidden p-0 sm:max-h-[90dvh]">
+        {/* Pinned Header */}
+        <OGDialogHeader className="flex shrink-0 flex-row items-center gap-3 ps-5 pe-12 pt-5 pb-3">
+          <div className="bg-surface-tertiary ring-border-chrome flex size-10 shrink-0 items-center justify-center rounded-xl ring-1 sm:size-12">
             {getItemIcon(item)}
           </div>
           <div className="min-w-0 flex-1">
-            <OGDialogTitle className="truncate text-base font-semibold">{item.title}</OGDialogTitle>
+            <OGDialogTitle className="truncate text-sm font-semibold sm:text-base">
+              {item.title}
+            </OGDialogTitle>
             <OGDialogDescription className="text-2xs mt-0.5">
               {localize('com_ui_details')}
             </OGDialogDescription>
           </div>
         </OGDialogHeader>
 
-        {/* Metadata Details Grid */}
-        <div className="flex flex-col gap-3 py-2 text-xs">
+        {/* Scrollable Metadata Details Body */}
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto p-4 text-xs sm:p-5">
           {/* File Name */}
-          <div className="bg-surface-secondary/50 border-border-light flex flex-col gap-1 rounded-lg border p-2.5">
+          <div className="bg-surface-secondary/50 border-border-light flex min-w-0 flex-col gap-1 rounded-lg border p-2.5">
             <span className="text-text-tertiary text-3xs font-medium tracking-wider uppercase">
               {localize('com_ui_name')}
             </span>
@@ -118,22 +121,22 @@ export default function LibraryFileDetailsModal({
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             {/* File Size */}
             {formattedSize && (
-              <div className="bg-surface-secondary/50 border-border-light flex flex-col gap-1 rounded-lg border p-2.5">
+              <div className="bg-surface-secondary/50 border-border-light flex min-w-0 flex-col gap-1 rounded-lg border p-2.5">
                 <span className="text-text-tertiary text-3xs flex items-center gap-1 font-medium tracking-wider uppercase">
-                  <HardDrive className="size-3" />
+                  <HardDrive className="size-3 shrink-0" />
                   {localize('com_ui_file_size')}
                 </span>
-                <span className="text-text-primary font-medium">{formattedSize}</span>
+                <span className="text-text-primary font-medium break-words">{formattedSize}</span>
               </div>
             )}
 
             {/* Extension / Type */}
-            <div className="bg-surface-secondary/50 border-border-light flex flex-col gap-1 rounded-lg border p-2.5">
+            <div className="bg-surface-secondary/50 border-border-light flex min-w-0 flex-col gap-1 rounded-lg border p-2.5">
               <span className="text-text-tertiary text-3xs flex items-center gap-1 font-medium tracking-wider uppercase">
-                <Tag className="size-3" />
+                <Tag className="size-3 shrink-0" />
                 {localize('com_ui_type')}
               </span>
               <span className="text-text-primary font-mono font-medium uppercase">{extension}</span>
@@ -141,19 +144,21 @@ export default function LibraryFileDetailsModal({
 
             {/* MIME Type */}
             {mimeType && (
-              <div className="bg-surface-secondary/50 border-border-light flex flex-col gap-1 rounded-lg border p-2.5">
+              <div className="bg-surface-secondary/50 border-border-light flex min-w-0 flex-col gap-1 rounded-lg border p-2.5">
                 <span className="text-text-tertiary text-3xs font-medium tracking-wider uppercase">
                   MIME
                 </span>
-                <span className="text-text-primary truncate font-mono">{mimeType}</span>
+                <span className="text-text-primary truncate font-mono" title={mimeType}>
+                  {mimeType}
+                </span>
               </div>
             )}
 
             {/* Dimensions (if image) */}
             {dimensions && (
-              <div className="bg-surface-secondary/50 border-border-light flex flex-col gap-1 rounded-lg border p-2.5">
+              <div className="bg-surface-secondary/50 border-border-light flex min-w-0 flex-col gap-1 rounded-lg border p-2.5">
                 <span className="text-text-tertiary text-3xs flex items-center gap-1 font-medium tracking-wider uppercase">
-                  <Maximize2 className="size-3" />
+                  <Maximize2 className="size-3 shrink-0" />
                   {localize('com_ui_dimensions')}
                 </span>
                 <span className="text-text-primary font-mono">{dimensions}</span>
@@ -162,9 +167,9 @@ export default function LibraryFileDetailsModal({
 
             {/* Date Modified */}
             {item.updatedAt && (
-              <div className="bg-surface-secondary/50 border-border-light flex flex-col gap-1 rounded-lg border p-2.5">
+              <div className="bg-surface-secondary/50 border-border-light flex min-w-0 flex-col gap-1 rounded-lg border p-2.5">
                 <span className="text-text-tertiary text-3xs flex items-center gap-1 font-medium tracking-wider uppercase">
-                  <Calendar className="size-3" />
+                  <Calendar className="size-3 shrink-0" />
                   {localize('com_ui_date')}
                 </span>
                 <span className="text-text-primary">{formatDate(item.updatedAt)}</span>
@@ -173,7 +178,7 @@ export default function LibraryFileDetailsModal({
 
             {/* Storage Backend Source */}
             {source && (
-              <div className="bg-surface-secondary/50 border-border-light flex flex-col gap-1 rounded-lg border p-2.5">
+              <div className="bg-surface-secondary/50 border-border-light flex min-w-0 flex-col gap-1 rounded-lg border p-2.5">
                 <span className="text-text-tertiary text-3xs font-medium tracking-wider uppercase">
                   {localize('com_ui_storage')}
                 </span>
@@ -184,10 +189,10 @@ export default function LibraryFileDetailsModal({
 
           {/* Associated Conversation */}
           {item.conversationId && (
-            <div className="bg-surface-secondary/50 border-border-light flex items-center justify-between rounded-lg border p-2.5">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="text-text-secondary size-4" />
-                <span className="text-text-primary text-xs font-medium">
+            <div className="bg-surface-secondary/50 border-border-light flex min-w-0 items-center justify-between rounded-lg border p-2.5">
+              <div className="flex min-w-0 items-center gap-2">
+                <MessageSquare className="text-text-secondary size-4 shrink-0" />
+                <span className="text-text-primary truncate text-xs font-medium">
                   {localize('com_ui_library_from_chat')}
                 </span>
               </div>
@@ -195,6 +200,7 @@ export default function LibraryFileDetailsModal({
                 <Button
                   variant="outline"
                   size="sm"
+                  className="shrink-0"
                   onClick={() => {
                     if (item.conversationId) {
                       onNavigateToChat(item.conversationId);
@@ -209,12 +215,13 @@ export default function LibraryFileDetailsModal({
           )}
         </div>
 
-        {/* Modal Action Buttons Footer */}
-        <div className="border-border-inset flex items-center justify-end gap-2 border-t pt-3">
+        {/* Pinned Modal Action Buttons Footer */}
+        <div className="border-border-inset bg-surface-dialog flex shrink-0 flex-col-reverse gap-2 border-t p-3 sm:flex-row sm:items-center sm:justify-end sm:px-5">
           {onPreview && (
             <Button
               variant="outline"
               size="sm"
+              className="w-full sm:w-auto"
               onClick={() => {
                 onPreview(item);
                 onOpenChange(false);
@@ -229,6 +236,7 @@ export default function LibraryFileDetailsModal({
             <Button
               variant="outline"
               size="sm"
+              className="w-full sm:w-auto"
               onClick={() => {
                 onDownload(item);
                 onOpenChange(false);
@@ -239,7 +247,12 @@ export default function LibraryFileDetailsModal({
             </Button>
           )}
 
-          <Button variant="default" size="sm" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="default"
+            size="sm"
+            className="w-full sm:w-auto"
+            onClick={() => onOpenChange(false)}
+          >
             {localize('com_ui_close')}
           </Button>
         </div>

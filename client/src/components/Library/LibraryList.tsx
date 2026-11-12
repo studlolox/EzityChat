@@ -240,13 +240,13 @@ export default function LibraryList({
   };
 
   return (
-    <div className="rounded-theme-surface border-border-light bg-surface-card overflow-hidden border shadow-xs">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
+    <div className="rounded-theme-surface border-border-light bg-surface-card w-full overflow-hidden border shadow-xs">
+      <div className="w-full overflow-x-auto sm:overflow-x-visible">
+        <table className="w-full table-fixed text-left text-xs">
           <thead className="border-border-light bg-surface-secondary/70 text-text-secondary text-2xs border-b font-semibold tracking-wider uppercase">
             <tr>
               {isSelectMode && (
-                <th scope="col" className="w-10 px-3 py-3">
+                <th scope="col" className="w-10 px-2 py-2.5 sm:px-3 sm:py-3">
                   <button
                     type="button"
                     onClick={allSelected ? onDeselectAll : onSelectAll}
@@ -265,20 +265,20 @@ export default function LibraryList({
                   </button>
                 </th>
               )}
-              <th scope="col" className="px-5 py-3">
+              <th scope="col" className="px-3 py-2.5 sm:px-5 sm:py-3">
                 {localize('com_ui_name')}
               </th>
-              <th scope="col" className="px-4 py-3">
+              <th scope="col" className="hidden px-4 py-3 sm:table-cell sm:w-28">
                 {localize('com_ui_type')}
               </th>
-              <th scope="col" className="px-4 py-3">
+              <th scope="col" className="hidden px-4 py-3 md:table-cell md:w-36 lg:w-44">
                 {localize('com_ui_conversation')}
               </th>
-              <th scope="col" className="px-4 py-3">
+              <th scope="col" className="hidden px-4 py-3 sm:table-cell sm:w-32">
                 {localize('com_ui_date')}
               </th>
-              <th scope="col" className="px-5 py-3 text-right">
-                {localize('com_ui_actions')}
+              <th scope="col" className="w-12 px-2 py-2.5 text-right sm:w-16 sm:px-5 sm:py-3">
+                <span className="sr-only sm:not-sr-only">{localize('com_ui_actions')}</span>
               </th>
             </tr>
           </thead>
@@ -303,7 +303,7 @@ export default function LibraryList({
                         e.stopPropagation();
                         onToggleSelect?.(item);
                       }}
-                      className="w-10 px-3 py-3"
+                      className="w-10 px-2 py-2.5 sm:px-3 sm:py-3"
                     >
                       <button
                         type="button"
@@ -320,10 +320,10 @@ export default function LibraryList({
                   )}
 
                   {/* Name & Icon */}
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-3">
-                      {renderIcon(item)}
-                      <div className="min-w-0">
+                  <td className="min-w-0 px-3 py-2.5 sm:px-5 sm:py-3">
+                    <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+                      <div className="shrink-0">{renderIcon(item)}</div>
+                      <div className="min-w-0 flex-1">
                         <p className="text-text-primary truncate font-medium">{item.title}</p>
                         <p className="text-text-tertiary text-2xs truncate">{item.subtitle}</p>
                       </div>
@@ -331,14 +331,14 @@ export default function LibraryList({
                   </td>
 
                   {/* Category / Type badge */}
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td className="hidden px-4 py-3 whitespace-nowrap sm:table-cell sm:w-28">
                     <span className="border-border-chrome bg-surface-secondary text-text-secondary text-3xs rounded-full border px-2.5 py-0.5 font-mono font-medium uppercase">
                       {item.category}
                     </span>
                   </td>
 
                   {/* Conversation Link */}
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td className="hidden px-4 py-3 whitespace-nowrap md:table-cell md:w-36 lg:w-44">
                     {item.conversationId ? (
                       <button
                         type="button"
@@ -359,12 +359,12 @@ export default function LibraryList({
                   </td>
 
                   {/* Date */}
-                  <td className="text-text-secondary text-2xs px-4 py-3 whitespace-nowrap">
+                  <td className="text-text-secondary text-2xs hidden px-4 py-3 whitespace-nowrap sm:table-cell sm:w-32">
                     {item.updatedAt ? formatDate(item.updatedAt) : '-'}
                   </td>
 
                   {/* Actions Dropdown */}
-                  <td className="px-5 py-3 text-right whitespace-nowrap">
+                  <td className="w-12 px-2 py-2.5 text-right whitespace-nowrap sm:w-16 sm:px-5 sm:py-3">
                     <ListRowActionMenu
                       item={item}
                       onPreview={handlePreview}

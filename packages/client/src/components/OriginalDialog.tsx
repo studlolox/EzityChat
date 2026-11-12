@@ -209,7 +209,7 @@ const DIALOG_SURFACE_CLASSES =
    *  centering `translate-*` is the `translate` property, which the enter and
    *  exit keyframes' `transform` composes with instead of replacing, so the
    *  slide names only the 2% the surface travels. */
-  'left-[50%] top-[50%] grid max-h-[90vh] w-full translate-x-[-50%] translate-y-[-50%] gap-4 overflow-y-auto rounded-2xl border-(length:--theme-dialog-stroke) border-border-light bg-surface-dialog py-6 px-theme-dialog-x shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-bottom-[2%] data-[state=open]:slide-in-from-bottom-[2%] high-contrast:border high-contrast:border-solid high-contrast:border-border-medium high-contrast:shadow-none';
+  'left-[50%] top-[50%] grid max-h-[min(90dvh,calc(100dvh-2rem))] w-[calc(100vw-2rem)] sm:w-full translate-x-[-50%] translate-y-[-50%] gap-4 overflow-y-auto rounded-2xl border-(length:--theme-dialog-stroke) border-border-light bg-surface-dialog py-6 px-theme-dialog-x shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-bottom-[2%] data-[state=open]:slide-in-from-bottom-[2%] high-contrast:border high-contrast:border-solid high-contrast:border-border-medium high-contrast:shadow-none';
 
 const DialogContent: React.ForwardRefExoticComponent<
   Omit<DialogPrimitive.DialogContentProps & React.RefAttributes<HTMLDivElement>, 'ref'> & {
@@ -398,7 +398,10 @@ const DialogHeader: {
   displayName: string;
 } = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>): JSX.Element => (
   <div
-    className={cn('space-y-theme-dialog-header flex flex-col text-center sm:text-start', className)}
+    className={cn(
+      'space-y-theme-dialog-header flex flex-col pe-8 text-center sm:text-start',
+      className,
+    )}
     {...props}
   />
 );
