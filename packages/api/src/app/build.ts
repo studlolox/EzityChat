@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { execFileSync } from 'child_process';
 import { logger } from '@librechat/data-schemas';
 
@@ -24,7 +26,25 @@ function safeGit(args: string[]): string | null {
   }
 }
 
-function normalize(value: string | undefined): string | null {
+function readBuildInfoFile(): Partial<BuildInfo> | null {
+  try {
+    const candidatePaths = [
+      path.resolve(process.cwd(), '.build-info.json'),
+      path.resolve(process.cwd(), 'client', 'dist', '.build-info.json'),
+    ];
+    for (const p of candidatePaths) {
+      if (fs.existsSync(p)) {
+        const raw = fs.readFileSync(p, 'utf8');
+        return JSON.parse(raw);
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function normalize(value: string | null | undefined): string | null {
   if (typeof value !== 'string') {
     return null;
   }
@@ -34,18 +54,30 @@ function normalize(value: string | undefined): string | null {
 
 /**
  * Resolves the current deployment's build info from (in order): explicit env vars,
- * then local git metadata. Used by `/api/config` to expose commit/branch to clients
- * when `interface.buildInfo` is enabled.
+ * stamped build-info file, then local git metadata. Used by `/api/config` to expose
+ * commit/branch/date to clients when `interface.buildInfo` is enabled.
  */
 export function resolveBuildInfo(): BuildInfo {
   if (cached) {
     return cached;
   }
 
-  const commit = normalize(process.env.BUILD_COMMIT) ?? safeGit(['rev-parse', 'HEAD']);
+  const fileInfo = readBuildInfoFile();
+
+  const commit =
+    normalize(process.env.BUILD_COMMIT) ??
+    normalize(fileInfo?.commit) ??
+    safeGit(['rev-parse', 'HEAD']);
+
   const branch =
-    normalize(process.env.BUILD_BRANCH) ?? safeGit(['rev-parse', '--abbrev-ref', 'HEAD']);
-  const buildDate = normalize(process.env.BUILD_DATE);
+    normalize(process.env.BUILD_BRANCH) ??
+    normalize(fileInfo?.branch) ??
+    safeGit(['rev-parse', '--abbrev-ref', 'HEAD']);
+
+  const buildDate =
+    normalize(process.env.BUILD_DATE) ??
+    normalize(fileInfo?.buildDate) ??
+    safeGit(['log', '-1', '--format=%cI']);
 
   const info: BuildInfo = {
     commit,

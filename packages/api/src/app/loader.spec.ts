@@ -131,7 +131,7 @@ describe('createCustomConfigLoader interface.theme', () => {
     expect(config?.interface).not.toHaveProperty('theme');
     expect(config?.interface?.modelSelect).toBe(true);
     expect(warnings(warn)).toContain(
-      'interface.theme: Unknown bundled theme "clickhous", expected one of: librechat, clickhouse',
+      'interface.theme: Unknown bundled theme "clickhous", expected one of: ezity, librechat, clickhouse',
     );
   });
 

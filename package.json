@@ -55,7 +55,7 @@
     "backend:experimental": "cross-env NODE_ENV=production node api/server/experimental.js",
     "backend:stop": "node config/stop-backend.js",
     "build:data-provider": "cd packages/data-provider && npm run build",
-    "build:api": "cd packages/api && npm run build",
+    "build:api": "node scripts/stamp-build-info.cjs && cd packages/api && npm run build",
     "build:data-schemas": "cd packages/data-schemas && npm run build",
     "build:client": "cd client && npm run build",
     "build:client-package": "cd packages/client && npm run build",

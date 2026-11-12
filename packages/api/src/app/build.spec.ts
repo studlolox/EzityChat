@@ -27,12 +27,12 @@ describe('resolveBuildInfo', () => {
     expect(info.buildDate).toBe('2026-04-20T12:00:00Z');
   });
 
-  it('returns null for any field that cannot be resolved', () => {
+  it('resolves buildDate from git or env when available', () => {
     __resetBuildInfoCacheForTests();
     const info = resolveBuildInfo();
-    // commit/branch may or may not resolve depending on whether the test env has git —
-    // but buildDate has no fallback, so it must be null here.
-    expect(info.buildDate).toBeNull();
+    if (info.commit) {
+      expect(typeof info.buildDate).toBe('string');
+    }
   });
 
   it('treats empty/whitespace env vars as unset', () => {
@@ -42,10 +42,9 @@ describe('resolveBuildInfo', () => {
 
     const info = resolveBuildInfo();
 
-    expect(info.buildDate).toBeNull();
-    // commit/branch will fall back to git or null — can't assert exact value, just that empty env was ignored
     expect(info.commit).not.toBe('   ');
     expect(info.branch).not.toBe('');
+    expect(info.buildDate).not.toBe('   ');
   });
 
   it('normalizes detached-HEAD branch to null', () => {
