@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSetAtom } from 'jotai';
+import { dataService } from 'librechat-data-provider';
 import {
   Folder,
   FileText,
@@ -29,8 +30,8 @@ import FilePreviewDialog, {
   formatBytes,
 } from '~/components/Chat/Messages/Content/FilePreviewDialog';
 import ExportModal from '~/components/Nav/ExportConversation/ExportModal';
-import { triggerDownload, canvasFetch } from '~/utils';
 import { useGetFiles } from '~/data-provider';
+import { triggerDownload } from '~/utils';
 import { useLocalize } from '~/hooks';
 
 export interface ChatFilesDrawerProps {
@@ -105,19 +106,13 @@ export function ChatFilesDrawer({
     if (!conversationId) return;
     try {
       setLoadingExtras(true);
-      const [docsRes, boardsRes] = await Promise.all([
-        canvasFetch(`/api/canvas?convoId=${encodeURIComponent(conversationId)}`),
-        canvasFetch(`/api/canvas-boards?convoId=${encodeURIComponent(conversationId)}`),
+      const [docsData, boardsData] = await Promise.all([
+        dataService.listCanvasDocuments({ convoId: conversationId }),
+        dataService.listCanvasBoards({ convoId: conversationId }),
       ]);
 
-      if (docsRes.ok) {
-        const docsData = await docsRes.json();
-        setCanvasDocs(docsData.documents ?? []);
-      }
-      if (boardsRes.ok) {
-        const boardsData = await boardsRes.json();
-        setCanvasBoards(boardsData.boards ?? []);
-      }
+      setCanvasDocs(docsData.documents ?? []);
+      setCanvasBoards(boardsData.boards ?? []);
     } catch {
       // Ignored
     } finally {

@@ -26,6 +26,7 @@ import * as m from './types/mutations';
 import * as ag from './types/agents';
 import * as q from './types/queries';
 import * as sk from './types/skills';
+import * as c from './types/canvas';
 import * as f from './types/files';
 import * as config from './config';
 import request from './request';
@@ -1965,4 +1966,94 @@ export function revokeScheduleMCPConsent(id: string, expectedRevision: string): 
   return request.deleteWithOptions(endpoints.scheduleMCPConsent(id), {
     data: { expectedRevision },
   });
+}
+
+/* Canvas Documents */
+export function listCanvasDocuments(params?: {
+  convoId?: string;
+}): Promise<c.CanvasDocumentListResponse> {
+  const query = params?.convoId ? `?convoId=${encodeURIComponent(params.convoId)}` : '';
+  return request.get(`${endpoints.canvas()}${query}`);
+}
+
+export function getCanvasDocument(documentId: string): Promise<c.CanvasDocumentDetailResponse> {
+  return request.get(endpoints.canvasDocument(documentId));
+}
+
+export function createCanvasDocument(
+  payload: c.CreateCanvasDocumentInput,
+): Promise<{ document: c.CanvasDocument; revision: c.CanvasRevision }> {
+  return request.post(endpoints.canvas(), payload);
+}
+
+export function updateCanvasDocument(
+  documentId: string,
+  payload: c.UpdateCanvasDocumentInput,
+): Promise<{ document: c.CanvasDocument; revision: c.CanvasRevision }> {
+  return request.patch(endpoints.canvasDocument(documentId), payload);
+}
+
+export function listCanvasRevisions(
+  documentId: string,
+): Promise<c.CanvasDocumentRevisionsResponse> {
+  return request.get(endpoints.canvasRevisions(documentId));
+}
+
+export function restoreCanvasRevision(
+  documentId: string,
+  revisionId: string,
+): Promise<{ document: c.CanvasDocument; revision: c.CanvasRevision }> {
+  return request.post(endpoints.canvasRestore(documentId), { revisionId });
+}
+
+export function acceptCanvasCandidate(
+  documentId: string,
+  candidateId: string,
+): Promise<{
+  success: boolean;
+  candidate: c.CanvasCandidate;
+  revision: c.CanvasRevision;
+  document: c.CanvasDocument;
+}> {
+  return request.post(endpoints.canvasCandidateAccept(documentId, candidateId));
+}
+
+export function rejectCanvasCandidate(
+  documentId: string,
+  candidateId: string,
+): Promise<{ success: boolean; candidate: c.CanvasCandidate }> {
+  return request.post(endpoints.canvasCandidateReject(documentId, candidateId));
+}
+
+/* Canvas Mindmap Boards */
+export function listCanvasBoards(params?: {
+  convoId?: string;
+}): Promise<c.CanvasBoardListResponse> {
+  const query = params?.convoId ? `?convoId=${encodeURIComponent(params.convoId)}` : '';
+  return request.get(`${endpoints.canvasBoards()}${query}`);
+}
+
+export function getCanvasBoard(boardId: string): Promise<c.CanvasBoardDetailResponse> {
+  return request.get(endpoints.canvasBoard(boardId));
+}
+
+export function createCanvasBoard(
+  payload: c.CreateCanvasBoardInput,
+): Promise<{ board: c.CanvasBoard; revision: c.CanvasBoardRevision }> {
+  return request.post(endpoints.canvasBoards(), payload);
+}
+
+export function updateCanvasBoard(
+  boardId: string,
+  payload: c.UpdateCanvasBoardInput,
+): Promise<{ board: c.CanvasBoard; revision: c.CanvasBoardRevision }> {
+  return request.patch(endpoints.canvasBoard(boardId), payload);
+}
+
+export function resolveCanvasBoardCandidate(
+  boardId: string,
+  candidateId: string,
+  action: 'accept' | 'reject',
+): Promise<{ success: boolean }> {
+  return request.post(endpoints.canvasBoardCandidateResolve(boardId, candidateId, action));
 }

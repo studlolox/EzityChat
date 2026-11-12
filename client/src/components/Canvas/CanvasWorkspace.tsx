@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAtom } from 'jotai';
 import { cn } from '@librechat/client';
 import { Loader2, Network, Plus } from 'lucide-react';
+import { dataService } from 'librechat-data-provider';
 import {
   canvasOpenAtom,
   activeCanvasDocIdAtom,
@@ -16,7 +17,6 @@ import { CanvasDiffView } from './CanvasDiffView';
 import { CanvasToolbar } from './CanvasToolbar';
 import { CanvasHeader } from './CanvasHeader';
 import { useLocalize } from '~/hooks';
-import { canvasFetch } from '~/utils';
 
 export interface CanvasWorkspaceProps {
   conversationId?: string;
@@ -39,7 +39,7 @@ interface CanvasRevData {
 
 interface CanvasCandidateData {
   _id: string;
-  status: 'pending' | 'accepted' | 'rejected';
+  status: 'pending' | 'accepted' | 'rejected' | 'expired';
   proposedContent: string;
   patchSummary?: string;
 }
@@ -78,14 +78,9 @@ export function CanvasWorkspace({
   const loadBoard = useCallback(async () => {
     if (!conversationId) return;
     try {
-      const listRes = await canvasFetch(
-        `/api/canvas-boards?convoId=${encodeURIComponent(conversationId)}`,
-      );
-      if (listRes.ok) {
-        const listData = await listRes.json();
-        if (listData.boards && listData.boards.length > 0 && !activeBoardId) {
-          setActiveBoardId(listData.boards[0]._id);
-        }
+      const listData = await dataService.listCanvasBoards({ convoId: conversationId });
+      if (listData.boards && listData.boards.length > 0 && !activeBoardId) {
+        setActiveBoardId(listData.boards[0]._id);
       }
     } catch {
       // Ignored
@@ -102,20 +97,13 @@ export function CanvasWorkspace({
     if (!conversationId) return;
     try {
       setIsCreatingBoard(true);
-      const res = await canvasFetch('/api/canvas-boards', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conversationId,
-          title: 'Mindmap',
-          rootTopic: 'Main Topic',
-        }),
+      const data = await dataService.createCanvasBoard({
+        conversationId,
+        title: 'Mindmap',
+        rootTopic: 'Main Topic',
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.board?._id) {
-          setActiveBoardId(data.board._id);
-        }
+      if (data.board?._id) {
+        setActiveBoardId(data.board._id);
       }
     } catch {
       // Ignored
@@ -132,15 +120,10 @@ export function CanvasWorkspace({
 
       if (!targetId && conversationId) {
         // Fetch list of active docs in conversation
-        const listRes = await canvasFetch(
-          `/api/canvas?convoId=${encodeURIComponent(conversationId)}`,
-        );
-        if (listRes.ok) {
-          const listData = await listRes.json();
-          if (listData.documents && listData.documents.length > 0) {
-            targetId = listData.documents[0]._id;
-            setActiveDocId(targetId);
-          }
+        const listData = await dataService.listCanvasDocuments({ convoId: conversationId });
+        if (listData.documents && listData.documents.length > 0) {
+          targetId = listData.documents[0]._id;
+          setActiveDocId(targetId);
         }
       }
 
@@ -149,13 +132,7 @@ export function CanvasWorkspace({
         return;
       }
 
-      const res = await canvasFetch(`/api/canvas/${encodeURIComponent(targetId)}`);
-      if (!res.ok) {
-        setIsLoading(false);
-        return;
-      }
-
-      const data = await res.json();
+      const data = await dataService.getCanvasDocument(targetId);
       setDocument(data.document);
       setCurrentRevision(data.currentRevision);
       setActiveCandidate(data.activeCandidate || null);
@@ -179,22 +156,13 @@ export function CanvasWorkspace({
 
       try {
         setSaveStatus('saving');
-        const res = await canvasFetch(`/api/canvas/${encodeURIComponent(document._id)}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            content: contentToSave,
-            baseRevisionId: currentRevision._id,
-          }),
+        const data = await dataService.updateCanvasDocument(document._id, {
+          content: contentToSave,
+          baseRevisionId: currentRevision._id,
         });
 
-        if (res.ok) {
-          const data = await res.json();
-          setCurrentRevision(data.revision);
-          setSaveStatus('saved');
-        } else {
-          setSaveStatus('error');
-        }
+        setCurrentRevision(data.revision);
+        setSaveStatus('saved');
       } catch {
         setSaveStatus('error');
       }
@@ -222,19 +190,11 @@ export function CanvasWorkspace({
     if (!document || !activeCandidate) return;
     try {
       setIsResolvingCandidate(true);
-      const res = await canvasFetch(
-        `/api/canvas/${encodeURIComponent(document._id)}/candidates/${encodeURIComponent(activeCandidate._id)}/accept`,
-        {
-          method: 'POST',
-        },
-      );
-      if (res.ok) {
-        const data = await res.json();
-        setActiveCandidate(null);
-        setCurrentRevision(data.revision);
-        setLocalContent(data.revision.content);
-        setSaveStatus('saved');
-      }
+      const data = await dataService.acceptCanvasCandidate(document._id, activeCandidate._id);
+      setActiveCandidate(null);
+      setCurrentRevision(data.revision);
+      setLocalContent(data.revision.content);
+      setSaveStatus('saved');
     } catch {
       setSaveStatus('error');
     } finally {
@@ -246,15 +206,8 @@ export function CanvasWorkspace({
     if (!document || !activeCandidate) return;
     try {
       setIsResolvingCandidate(true);
-      const res = await canvasFetch(
-        `/api/canvas/${encodeURIComponent(document._id)}/candidates/${encodeURIComponent(activeCandidate._id)}/reject`,
-        {
-          method: 'POST',
-        },
-      );
-      if (res.ok) {
-        setActiveCandidate(null);
-      }
+      await dataService.rejectCanvasCandidate(document._id, activeCandidate._id);
+      setActiveCandidate(null);
     } catch {
       setSaveStatus('error');
     } finally {

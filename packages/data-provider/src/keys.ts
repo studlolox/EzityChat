@@ -123,6 +123,11 @@ export enum QueryKeys {
   agentQueuedTurns = 'agentQueuedTurns',
   /* Combined Pinned-section display order (favorites + pinned chats) */
   pinnedOrder = 'pinnedOrder',
+  /* Canvas */
+  canvasDocuments = 'canvasDocuments',
+  canvasDocument = 'canvasDocument',
+  canvasBoards = 'canvasBoards',
+  canvasBoard = 'canvasBoard',
 }
 
 // Dynamic query keys that require parameters
@@ -134,6 +139,12 @@ export const DynamicQueryKeys = {
   projectAvailableFiles: (projectId: string) =>
     [QueryKeys.projectAvailableFiles, projectId] as const,
   codeEnvironmentStatus: (id: string) => [QueryKeys.codeEnvironments, id, 'status'] as const,
+  canvasDocuments: (conversationId?: string) =>
+    [QueryKeys.canvasDocuments, conversationId ?? 'all'] as const,
+  canvasDocument: (documentId: string) => [QueryKeys.canvasDocument, documentId] as const,
+  canvasBoards: (conversationId?: string) =>
+    [QueryKeys.canvasBoards, conversationId ?? 'all'] as const,
+  canvasBoard: (boardId: string) => [QueryKeys.canvasBoard, boardId] as const,
 } as const;
 
 export enum MutationKeys {

@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { dataService } from 'librechat-data-provider';
 import { ZoomIn, ZoomOut, Maximize2, Plus, Trash2, Check, X } from 'lucide-react';
 import type { VisualBoardNode, VisualBoardEdge } from './mindmap-layout';
 import { MINDMAP_COLORS } from './mindmap-layout';
 import { useLocalize } from '~/hooks';
-import { canvasFetch } from '~/utils';
 
 export interface VisualBoardData {
   _id?: string;
   title: string;
   rootTopic: string;
-  orientation: 'horizontal' | 'vertical';
+  orientation?: 'horizontal' | 'vertical';
   currentRevisionId?: string;
 }
 
@@ -20,7 +20,7 @@ export interface VisualBoardEditorProps {
 
 interface ActiveBoardCandidate {
   _id: string;
-  patchSummary: string;
+  patchSummary?: string;
   status: string;
   proposedNodes?: VisualBoardNode[];
   proposedEdges?: VisualBoardEdge[];
@@ -54,15 +54,28 @@ export function VisualBoardEditor({ boardId, onClose: _onClose }: VisualBoardEdi
   const fetchBoard = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await canvasFetch(`/api/canvas-boards/${boardId}`);
-      if (!res.ok) {
-        throw new Error('Failed to load visual board');
-      }
-      const data = await res.json();
+      const data = await dataService.getCanvasBoard(boardId);
       setBoard(data.board);
-      setNodes(data.currentRevision?.nodes ?? []);
+      setNodes(
+        (data.currentRevision?.nodes ?? []).map((node) => ({
+          ...node,
+          x: node.x ?? 0,
+          y: node.y ?? 0,
+        })),
+      );
       setEdges(data.currentRevision?.edges ?? []);
-      setActiveCandidate(data.activeCandidate ?? null);
+      setActiveCandidate(
+        data.activeCandidate
+          ? {
+              ...data.activeCandidate,
+              proposedNodes: data.activeCandidate.proposedNodes?.map((node) => ({
+                ...node,
+                x: node.x ?? 0,
+                y: node.y ?? 0,
+              })),
+            }
+          : null,
+      );
       setSaveStatus('saved');
     } catch {
       setSaveStatus('error');
@@ -83,24 +96,11 @@ export function VisualBoardEditor({ boardId, onClose: _onClose }: VisualBoardEdi
       if (!board) return;
       try {
         setSaveStatus('saving');
-        const res = await canvasFetch(`/api/canvas-boards/${boardId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nodes: updatedNodes,
-            edges: updatedEdges,
-            baseRevisionId: board.currentRevisionId,
-          }),
+        const data = await dataService.updateCanvasBoard(boardId, {
+          nodes: updatedNodes,
+          edges: updatedEdges,
+          baseRevisionId: board.currentRevisionId,
         });
-        if (res.status === 409) {
-          // Optimistic concurrency conflict
-          setSaveStatus('error');
-          return;
-        }
-        if (!res.ok) {
-          throw new Error('Save failed');
-        }
-        const data = await res.json();
         setBoard(data.board);
         setSaveStatus('saved');
       } catch {
@@ -218,13 +218,8 @@ export function VisualBoardEditor({ boardId, onClose: _onClose }: VisualBoardEdi
   const handleResolveCandidate = async (action: 'accept' | 'reject') => {
     if (!activeCandidate) return;
     try {
-      const res = await canvasFetch(
-        `/api/canvas-boards/${boardId}/candidates/${activeCandidate._id}/${action}`,
-        { method: 'POST' },
-      );
-      if (res.ok) {
-        fetchBoard();
-      }
+      await dataService.resolveCanvasBoardCandidate(boardId, activeCandidate._id, action);
+      fetchBoard();
     } catch {
       // ignore
     }

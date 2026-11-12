@@ -3,7 +3,6 @@ import { apiBaseUrl, dataService } from 'librechat-data-provider';
 import type { UnifiedLibraryItem } from '~/components/Library/types';
 import { triggerDownload } from './downloadFile';
 import { toAbsoluteFilePath } from './media';
-import { canvasFetch } from './canvasFetch';
 
 function sanitizeFilename(name: string): string {
   return name.replace(/[<>:"/\\|?*]/g, '_').trim() || 'file';
@@ -44,31 +43,23 @@ export async function downloadLibraryItemsAsZip(
     const single = items[0];
     if (single.kind === 'canvas_doc' && single.canvasDoc) {
       try {
-        const res = await canvasFetch(`/api/canvas/${encodeURIComponent(single.canvasDoc._id)}`);
-        if (res.ok) {
-          const docData = await res.json();
-          const content = docData.document?.content ?? '';
-          const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
-          const url = URL.createObjectURL(blob);
-          triggerDownload(url, `${sanitizeFilename(single.title)}.md`);
-          return;
-        }
+        const docData = await dataService.getCanvasDocument(single.canvasDoc._id);
+        const content = docData.currentRevision?.content ?? '';
+        const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        triggerDownload(url, `${sanitizeFilename(single.title)}.md`);
+        return;
       } catch {
         // Fall through
       }
     } else if (single.kind === 'canvas_board' && single.canvasBoard) {
       try {
-        const res = await canvasFetch(
-          `/api/canvas-boards/${encodeURIComponent(single.canvasBoard._id)}`,
-        );
-        if (res.ok) {
-          const boardData = await res.json();
-          const content = JSON.stringify(boardData.board ?? {}, null, 2);
-          const blob = new Blob([content], { type: 'application/json;charset=utf-8' });
-          const url = URL.createObjectURL(blob);
-          triggerDownload(url, `${sanitizeFilename(single.title)}.json`);
-          return;
-        }
+        const boardData = await dataService.getCanvasBoard(single.canvasBoard._id);
+        const content = JSON.stringify(boardData.board ?? {}, null, 2);
+        const blob = new Blob([content], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        triggerDownload(url, `${sanitizeFilename(single.title)}.json`);
+        return;
       } catch {
         // Fall through
       }
@@ -90,25 +81,17 @@ export async function downloadLibraryItemsAsZip(
   for (const item of items) {
     try {
       if (item.kind === 'canvas_doc' && item.canvasDoc) {
-        const res = await canvasFetch(`/api/canvas/${encodeURIComponent(item.canvasDoc._id)}`);
-        if (res.ok) {
-          const docData = await res.json();
-          const content = docData.document?.content ?? '';
-          const rawName = `${sanitizeFilename(item.title)}.md`;
-          const entryName = getUniqueName(usedNames, rawName);
-          zip.file(entryName, content);
-        }
+        const docData = await dataService.getCanvasDocument(item.canvasDoc._id);
+        const content = docData.currentRevision?.content ?? '';
+        const rawName = `${sanitizeFilename(item.title)}.md`;
+        const entryName = getUniqueName(usedNames, rawName);
+        zip.file(entryName, content);
       } else if (item.kind === 'canvas_board' && item.canvasBoard) {
-        const res = await canvasFetch(
-          `/api/canvas-boards/${encodeURIComponent(item.canvasBoard._id)}`,
-        );
-        if (res.ok) {
-          const boardData = await res.json();
-          const content = JSON.stringify(boardData.board ?? {}, null, 2);
-          const rawName = `${sanitizeFilename(item.title)}.json`;
-          const entryName = getUniqueName(usedNames, rawName);
-          zip.file(entryName, content);
-        }
+        const boardData = await dataService.getCanvasBoard(item.canvasBoard._id);
+        const content = JSON.stringify(boardData.board ?? {}, null, 2);
+        const rawName = `${sanitizeFilename(item.title)}.json`;
+        const entryName = getUniqueName(usedNames, rawName);
+        zip.file(entryName, content);
       } else if (item.file) {
         let blob: Blob | null = null;
         if (item.file.file_id && userId) {

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { dataService } from 'librechat-data-provider';
 import type { TFile } from 'librechat-data-provider';
 import type {
   CanvasBoardItem,
@@ -10,7 +11,6 @@ import type {
 } from './types';
 import { formatBytes } from '~/components/Chat/Messages/Content/FilePreviewDialog';
 import { useGetFiles } from '~/data-provider';
-import { canvasFetch } from '~/utils';
 
 const isImageFile = (file: TFile): boolean => {
   if (file.type?.startsWith('image/')) return true;
@@ -40,9 +40,7 @@ export function useLibraryItems(
   } = useQuery<CanvasDocItem[]>({
     queryKey: ['canvas-docs', 'all'],
     queryFn: async () => {
-      const res = await canvasFetch('/api/canvas');
-      if (!res.ok) return [];
-      const data = await res.json();
+      const data = await dataService.listCanvasDocuments();
       return (data.documents ?? []) as CanvasDocItem[];
     },
     staleTime: 1000 * 30,
@@ -56,9 +54,7 @@ export function useLibraryItems(
   } = useQuery<CanvasBoardItem[]>({
     queryKey: ['canvas-boards', 'all'],
     queryFn: async () => {
-      const res = await canvasFetch('/api/canvas-boards');
-      if (!res.ok) return [];
-      const data = await res.json();
+      const data = await dataService.listCanvasBoards();
       return (data.boards ?? []) as CanvasBoardItem[];
     },
     staleTime: 1000 * 30,

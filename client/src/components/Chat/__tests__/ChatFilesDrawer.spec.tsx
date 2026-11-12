@@ -1,9 +1,22 @@
 import React from 'react';
+import { dataService } from 'librechat-data-provider';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import type { TConversation, TFile } from 'librechat-data-provider';
 import { ChatFilesDrawer } from '../ChatFilesDrawer';
 
 const mockUseGetFiles = jest.fn();
+
+jest.mock('librechat-data-provider', () => {
+  const actual = jest.requireActual('librechat-data-provider');
+  return {
+    ...actual,
+    dataService: {
+      ...actual.dataService,
+      listCanvasDocuments: jest.fn(),
+      listCanvasBoards: jest.fn(),
+    },
+  };
+});
 
 jest.mock('~/data-provider', () => ({
   useGetFiles: (...args: unknown[]) => mockUseGetFiles(...args),
@@ -70,42 +83,27 @@ describe('ChatFilesDrawer', () => {
       isLoading: false,
     });
 
-    global.fetch = jest.fn((url: string | URL | Request) => {
-      const urlStr = String(url);
-      if (urlStr.includes('/api/canvas?')) {
-        return Promise.resolve({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              documents: [
-                {
-                  _id: 'doc-1',
-                  title: 'Packing Checklist',
-                  docType: 'markdown',
-                  language: 'markdown',
-                },
-              ],
-            }),
-        } as Response);
-      }
-      if (urlStr.includes('/api/canvas-boards?')) {
-        return Promise.resolve({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              boards: [
-                {
-                  _id: 'board-1',
-                  title: 'Vacation Mindmap',
-                  rootTopic: 'Summer Trip',
-                },
-              ],
-            }),
-        } as Response);
-      }
-      return Promise.resolve({
-        ok: false,
-      } as Response);
+    jest.mocked(dataService.listCanvasDocuments).mockResolvedValue({
+      documents: [
+        {
+          _id: 'doc-1',
+          title: 'Packing Checklist',
+          docType: 'markdown',
+          language: 'markdown',
+          conversationId: 'convo-123',
+        },
+      ],
+    });
+
+    jest.mocked(dataService.listCanvasBoards).mockResolvedValue({
+      boards: [
+        {
+          _id: 'board-1',
+          title: 'Vacation Mindmap',
+          rootTopic: 'Summer Trip',
+          conversationId: 'convo-123',
+        },
+      ],
     });
   });
 

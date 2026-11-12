@@ -713,3 +713,28 @@ export const graphToken = (scopes: string) =>
   `${BASE_URL}/api/auth/graph-token?scopes=${encodeURIComponent(scopes)}`;
 
 export const resetToolApprovalGrants = (): string => `${BASE_URL}/api/agents/tools/approvals/reset`;
+
+/* Canvas Documents */
+export const canvas = () => `${BASE_URL}/api/canvas`;
+export const canvasDocument = (documentId: string) =>
+  `${canvas()}/${encodeURIComponent(documentId)}`;
+export const canvasRevisions = (documentId: string) => `${canvasDocument(documentId)}/revisions`;
+export const canvasRestore = (documentId: string) => `${canvasDocument(documentId)}/restore`;
+export const canvasCandidates = (documentId: string) => `${canvasDocument(documentId)}/candidates`;
+export const canvasCandidateAccept = (documentId: string, candidateId: string) =>
+  `${canvasCandidates(documentId)}/${encodeURIComponent(candidateId)}/accept`;
+export const canvasCandidateReject = (documentId: string, candidateId: string) =>
+  `${canvasCandidates(documentId)}/${encodeURIComponent(candidateId)}/reject`;
+
+/* Canvas Mindmap Boards */
+export const canvasBoards = () => `${BASE_URL}/api/canvas-boards`;
+export const canvasBoard = (boardId: string) => `${canvasBoards()}/${encodeURIComponent(boardId)}`;
+export const canvasBoardRevisions = (boardId: string) => `${canvasBoard(boardId)}/revisions`;
+export const canvasBoardRestore = (boardId: string) => `${canvasBoard(boardId)}/restore`;
+export const canvasBoardCandidates = (boardId: string) => `${canvasBoard(boardId)}/candidates`;
+export const canvasBoardCandidateResolve = (
+  boardId: string,
+  candidateId: string,
+  action: 'accept' | 'reject',
+) =>
+  `${canvasBoardCandidates(boardId)}/${encodeURIComponent(candidateId)}/${encodeURIComponent(action)}`;
