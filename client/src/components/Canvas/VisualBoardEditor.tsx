@@ -3,6 +3,7 @@ import { ZoomIn, ZoomOut, Maximize2, Plus, Trash2, Check, X } from 'lucide-react
 import type { VisualBoardNode, VisualBoardEdge } from './mindmap-layout';
 import { MINDMAP_COLORS } from './mindmap-layout';
 import { useLocalize } from '~/hooks';
+import { canvasFetch } from '~/utils';
 
 export interface VisualBoardData {
   _id?: string;
@@ -53,7 +54,7 @@ export function VisualBoardEditor({ boardId, onClose: _onClose }: VisualBoardEdi
   const fetchBoard = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/canvas-boards/${boardId}`);
+      const res = await canvasFetch(`/api/canvas-boards/${boardId}`);
       if (!res.ok) {
         throw new Error('Failed to load visual board');
       }
@@ -82,7 +83,7 @@ export function VisualBoardEditor({ boardId, onClose: _onClose }: VisualBoardEdi
       if (!board) return;
       try {
         setSaveStatus('saving');
-        const res = await fetch(`/api/canvas-boards/${boardId}`, {
+        const res = await canvasFetch(`/api/canvas-boards/${boardId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -217,7 +218,7 @@ export function VisualBoardEditor({ boardId, onClose: _onClose }: VisualBoardEdi
   const handleResolveCandidate = async (action: 'accept' | 'reject') => {
     if (!activeCandidate) return;
     try {
-      const res = await fetch(
+      const res = await canvasFetch(
         `/api/canvas-boards/${boardId}/candidates/${activeCandidate._id}/${action}`,
         { method: 'POST' },
       );

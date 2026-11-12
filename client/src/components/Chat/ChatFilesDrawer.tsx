@@ -29,8 +29,8 @@ import FilePreviewDialog, {
   formatBytes,
 } from '~/components/Chat/Messages/Content/FilePreviewDialog';
 import ExportModal from '~/components/Nav/ExportConversation/ExportModal';
+import { triggerDownload, canvasFetch } from '~/utils';
 import { useGetFiles } from '~/data-provider';
-import { triggerDownload } from '~/utils';
 import { useLocalize } from '~/hooks';
 
 export interface ChatFilesDrawerProps {
@@ -106,12 +106,8 @@ export function ChatFilesDrawer({
     try {
       setLoadingExtras(true);
       const [docsRes, boardsRes] = await Promise.all([
-        fetch(`/api/canvas?convoId=${encodeURIComponent(conversationId)}`, {
-          credentials: 'include',
-        }),
-        fetch(`/api/canvas-boards?convoId=${encodeURIComponent(conversationId)}`, {
-          credentials: 'include',
-        }),
+        canvasFetch(`/api/canvas?convoId=${encodeURIComponent(conversationId)}`),
+        canvasFetch(`/api/canvas-boards?convoId=${encodeURIComponent(conversationId)}`),
       ]);
 
       if (docsRes.ok) {

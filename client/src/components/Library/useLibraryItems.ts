@@ -10,6 +10,7 @@ import type {
 } from './types';
 import { formatBytes } from '~/components/Chat/Messages/Content/FilePreviewDialog';
 import { useGetFiles } from '~/data-provider';
+import { canvasFetch } from '~/utils';
 
 const isImageFile = (file: TFile): boolean => {
   if (file.type?.startsWith('image/')) return true;
@@ -39,7 +40,7 @@ export function useLibraryItems(
   } = useQuery<CanvasDocItem[]>({
     queryKey: ['canvas-docs', 'all'],
     queryFn: async () => {
-      const res = await fetch('/api/canvas', { credentials: 'include' });
+      const res = await canvasFetch('/api/canvas');
       if (!res.ok) return [];
       const data = await res.json();
       return (data.documents ?? []) as CanvasDocItem[];
@@ -55,7 +56,7 @@ export function useLibraryItems(
   } = useQuery<CanvasBoardItem[]>({
     queryKey: ['canvas-boards', 'all'],
     queryFn: async () => {
-      const res = await fetch('/api/canvas-boards', { credentials: 'include' });
+      const res = await canvasFetch('/api/canvas-boards');
       if (!res.ok) return [];
       const data = await res.json();
       return (data.boards ?? []) as CanvasBoardItem[];

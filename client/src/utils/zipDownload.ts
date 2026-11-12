@@ -1,7 +1,9 @@
 import JSZip from 'jszip';
 import { apiBaseUrl, dataService } from 'librechat-data-provider';
 import type { UnifiedLibraryItem } from '~/components/Library/types';
-import { toAbsoluteFilePath, triggerDownload } from '~/utils';
+import { triggerDownload } from './downloadFile';
+import { toAbsoluteFilePath } from './media';
+import { canvasFetch } from './canvasFetch';
 
 function sanitizeFilename(name: string): string {
   return name.replace(/[<>:"/\\|?*]/g, '_').trim() || 'file';
@@ -42,9 +44,7 @@ export async function downloadLibraryItemsAsZip(
     const single = items[0];
     if (single.kind === 'canvas_doc' && single.canvasDoc) {
       try {
-        const res = await fetch(`/api/canvas/${encodeURIComponent(single.canvasDoc._id)}`, {
-          credentials: 'include',
-        });
+        const res = await canvasFetch(`/api/canvas/${encodeURIComponent(single.canvasDoc._id)}`);
         if (res.ok) {
           const docData = await res.json();
           const content = docData.document?.content ?? '';
@@ -58,11 +58,8 @@ export async function downloadLibraryItemsAsZip(
       }
     } else if (single.kind === 'canvas_board' && single.canvasBoard) {
       try {
-        const res = await fetch(
+        const res = await canvasFetch(
           `/api/canvas-boards/${encodeURIComponent(single.canvasBoard._id)}`,
-          {
-            credentials: 'include',
-          },
         );
         if (res.ok) {
           const boardData = await res.json();
@@ -93,9 +90,7 @@ export async function downloadLibraryItemsAsZip(
   for (const item of items) {
     try {
       if (item.kind === 'canvas_doc' && item.canvasDoc) {
-        const res = await fetch(`/api/canvas/${encodeURIComponent(item.canvasDoc._id)}`, {
-          credentials: 'include',
-        });
+        const res = await canvasFetch(`/api/canvas/${encodeURIComponent(item.canvasDoc._id)}`);
         if (res.ok) {
           const docData = await res.json();
           const content = docData.document?.content ?? '';
@@ -104,9 +99,9 @@ export async function downloadLibraryItemsAsZip(
           zip.file(entryName, content);
         }
       } else if (item.kind === 'canvas_board' && item.canvasBoard) {
-        const res = await fetch(`/api/canvas-boards/${encodeURIComponent(item.canvasBoard._id)}`, {
-          credentials: 'include',
-        });
+        const res = await canvasFetch(
+          `/api/canvas-boards/${encodeURIComponent(item.canvasBoard._id)}`,
+        );
         if (res.ok) {
           const boardData = await res.json();
           const content = JSON.stringify(boardData.board ?? {}, null, 2);

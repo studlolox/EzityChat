@@ -16,6 +16,7 @@ import { CanvasDiffView } from './CanvasDiffView';
 import { CanvasToolbar } from './CanvasToolbar';
 import { CanvasHeader } from './CanvasHeader';
 import { useLocalize } from '~/hooks';
+import { canvasFetch } from '~/utils';
 
 export interface CanvasWorkspaceProps {
   conversationId?: string;
@@ -77,9 +78,8 @@ export function CanvasWorkspace({
   const loadBoard = useCallback(async () => {
     if (!conversationId) return;
     try {
-      const listRes = await fetch(
+      const listRes = await canvasFetch(
         `/api/canvas-boards?convoId=${encodeURIComponent(conversationId)}`,
-        { credentials: 'include' },
       );
       if (listRes.ok) {
         const listData = await listRes.json();
@@ -102,10 +102,9 @@ export function CanvasWorkspace({
     if (!conversationId) return;
     try {
       setIsCreatingBoard(true);
-      const res = await fetch('/api/canvas-boards', {
+      const res = await canvasFetch('/api/canvas-boards', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           conversationId,
           title: 'Mindmap',
@@ -133,9 +132,9 @@ export function CanvasWorkspace({
 
       if (!targetId && conversationId) {
         // Fetch list of active docs in conversation
-        const listRes = await fetch(`/api/canvas?convoId=${encodeURIComponent(conversationId)}`, {
-          credentials: 'include',
-        });
+        const listRes = await canvasFetch(
+          `/api/canvas?convoId=${encodeURIComponent(conversationId)}`,
+        );
         if (listRes.ok) {
           const listData = await listRes.json();
           if (listData.documents && listData.documents.length > 0) {
@@ -150,9 +149,7 @@ export function CanvasWorkspace({
         return;
       }
 
-      const res = await fetch(`/api/canvas/${encodeURIComponent(targetId)}`, {
-        credentials: 'include',
-      });
+      const res = await canvasFetch(`/api/canvas/${encodeURIComponent(targetId)}`);
       if (!res.ok) {
         setIsLoading(false);
         return;
@@ -182,10 +179,9 @@ export function CanvasWorkspace({
 
       try {
         setSaveStatus('saving');
-        const res = await fetch(`/api/canvas/${encodeURIComponent(document._id)}`, {
+        const res = await canvasFetch(`/api/canvas/${encodeURIComponent(document._id)}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
           body: JSON.stringify({
             content: contentToSave,
             baseRevisionId: currentRevision._id,
@@ -226,11 +222,10 @@ export function CanvasWorkspace({
     if (!document || !activeCandidate) return;
     try {
       setIsResolvingCandidate(true);
-      const res = await fetch(
+      const res = await canvasFetch(
         `/api/canvas/${encodeURIComponent(document._id)}/candidates/${encodeURIComponent(activeCandidate._id)}/accept`,
         {
           method: 'POST',
-          credentials: 'include',
         },
       );
       if (res.ok) {
@@ -251,11 +246,10 @@ export function CanvasWorkspace({
     if (!document || !activeCandidate) return;
     try {
       setIsResolvingCandidate(true);
-      const res = await fetch(
+      const res = await canvasFetch(
         `/api/canvas/${encodeURIComponent(document._id)}/candidates/${encodeURIComponent(activeCandidate._id)}/reject`,
         {
           method: 'POST',
-          credentials: 'include',
         },
       );
       if (res.ok) {
