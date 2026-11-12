@@ -127,10 +127,17 @@ class EditImageAPI extends Tool {
           },
         },
       ];
+      const refId =
+        data.reference_image_id ||
+        (Array.isArray(data.reference_image_ids) ? data.reference_image_ids[0] : null);
+      const responseText = result.file_id
+        ? `${displayMessage}\n\ngenerated_image_id: "${result.file_id}"` +
+          (refId ? `\nreferenced_image_id: "${refId}"` : '')
+        : displayMessage;
       const response = [
         {
           type: ContentTypes.TEXT,
-          text: displayMessage,
+          text: responseText,
         },
       ];
       return [response, { content, file_ids: [result.file_id] }];

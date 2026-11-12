@@ -679,6 +679,39 @@ describe('primeResources', () => {
       expect(result.tool_resources?.[EToolResources.image_edit]).toBeUndefined();
     });
 
+    it('should process image files not in requestFileSet when image_edit is in enabledToolResources', async () => {
+      const mockFiles: TFile[] = [
+        {
+          user: 'user1',
+          file_id: 'file-not-in-set',
+          filename: 'image.png',
+          filepath: '/uploads/image.png',
+          object: 'file',
+          type: 'image/png',
+          bytes: 2048,
+          embedded: false,
+          usage: 0,
+          height: 800,
+          width: 600,
+        },
+      ];
+      const requestFileSet = new Set(['other-file']);
+      const attachments = Promise.resolve(mockFiles);
+
+      const result = await primeResources({
+        req: mockReq,
+        appConfig: mockAppConfig,
+        getFiles: mockGetFiles,
+        requestFileSet,
+        attachments,
+        tool_resources: {},
+        enabledToolResources: new Set([EToolResources.image_edit]),
+      });
+
+      expect(result.attachments).toEqual(mockFiles);
+      expect(result.tool_resources?.[EToolResources.image_edit]?.files).toEqual(mockFiles);
+    });
+
     it('should not process image files without height and width', async () => {
       const mockFiles: TFile[] = [
         {

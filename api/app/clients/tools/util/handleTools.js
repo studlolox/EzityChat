@@ -615,7 +615,8 @@ const loadTools = async ({
     if (toolConstructors[tool]) {
       const options = toolOptions[tool] || {};
       if (tool === 'edit_image') {
-        const imageFiles = options.imageFiles ?? [];
+        const imageFiles =
+          options.tool_resources?.[EToolResources.image_edit]?.files ?? options.imageFiles ?? [];
         const toolContext = buildImageToolContext({
           imageFiles,
           toolName: 'edit_image',

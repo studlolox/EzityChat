@@ -13,7 +13,7 @@ export function buildImageToolContext({
   contextDescription = 'image context',
   paramName = 'image_ids',
 }: {
-  imageFiles: Array<{ file_id: string }>;
+  imageFiles: Array<{ file_id: string; filename?: string }>;
   toolName: string;
   contextDescription?: string;
   paramName?: string;
@@ -29,9 +29,10 @@ export function buildImageToolContext({
       continue;
     }
     if (i === 0) {
-      toolContext = `Image files provided in this request (their image IDs listed in order of appearance) available for ${contextDescription}:`;
+      toolContext = `Image files available for ${contextDescription}: (their image IDs listed in order of appearance)`;
     }
-    toolContext += `\n\t- ${file.file_id}`;
+    const namePart = file.filename ? ` (${file.filename})` : '';
+    toolContext += `\n\t- ${file.file_id}${namePart}`;
     if (i === imageFiles.length - 1) {
       const paramRef =
         paramName === 'reference_image_id'

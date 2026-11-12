@@ -68,10 +68,13 @@ class ComfyUIAPI extends Tool {
           },
         },
       ];
+      const responseText = result.file_id
+        ? `${displayMessage}\n\ngenerated_image_id: "${result.file_id}"`
+        : displayMessage;
       const response = [
         {
           type: ContentTypes.TEXT,
-          text: displayMessage,
+          text: responseText,
         },
       ];
       return [response, { content, file_ids: [result.file_id] }];

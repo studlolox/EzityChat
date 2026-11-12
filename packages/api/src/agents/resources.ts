@@ -329,6 +329,7 @@ const categorizeFileForToolResources = ({
   agentScoped = false,
   agentId,
   userId,
+  enabledToolResources,
 }: {
   file: TFile;
   tool_resources: AgentToolResources;
@@ -340,6 +341,7 @@ const categorizeFileForToolResources = ({
   agentId?: string;
   /** Owner of the unscoped namespace, which is where anything not agent-scoped lands. */
   userId?: string;
+  enabledToolResources?: Set<EToolResources>;
 }): void => {
   if (file.metadata?.codeEnvRef || file.metadata?.codeEnvRefs) {
     addFileToResource({
@@ -370,8 +372,8 @@ const categorizeFileForToolResources = ({
   }
 
   if (
-    requestFileSet.has(file.file_id) &&
-    file.type.startsWith('image') &&
+    (requestFileSet.has(file.file_id) || enabledToolResources?.has(EToolResources.image_edit)) &&
+    file.type?.startsWith('image') &&
     file.height &&
     file.width
   ) {
@@ -1011,6 +1013,7 @@ export const primeResources = async ({
           agentScoped: agentId != null && isAgentScopedFile(file),
           agentId,
           userId: resourcePrincipal?.id,
+          enabledToolResources,
         });
 
         attachments.push(file);
@@ -1085,6 +1088,7 @@ export const primeResources = async ({
         requestFileSet,
         processedResourceFiles,
         userId: resourcePrincipal?.id,
+        enabledToolResources,
       });
 
       if (file.file_id && attachmentFileIds.has(file.file_id)) {

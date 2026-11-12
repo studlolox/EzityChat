@@ -135,6 +135,7 @@ import { registerMemoryTools, memoryToolUsageGuard } from './memory';
 import { isImplicitStatefulCodeRouteAvailable } from '~/code/config';
 import { applyIntentLabels, sanitizeIntentLabels } from './intent';
 import { prepareQueuedCodeFileContext } from '~/files/code/queued';
+import { prepareSessionFilesContext } from '~/files/sessionFiles';
 import { ContentFilterError } from '../middleware/contentFilter';
 import { resolveToolRoleGrants } from '~/tools/rolePermissions';
 import { createRequestAgentExecutionContext } from './runtime';
@@ -485,6 +486,16 @@ export function resolveResendToolResources({
     }
     if (isCodeFileToolName(tool)) {
       toolResourceSet.add(EToolResources.execute_code);
+    }
+    if (
+      tool === 'edit_image' ||
+      tool === 'image_edit_oai' ||
+      tool === 'image_gen_oai' ||
+      tool === 'gemini_image_gen' ||
+      tool === 'generate_image' ||
+      tool === 'view_image'
+    ) {
+      toolResourceSet.add(EToolResources.image_edit);
     }
     if (EToolResources[tool as keyof typeof EToolResources]) {
       toolResourceSet.add(EToolResources[tool as keyof typeof EToolResources]);
@@ -2926,6 +2937,12 @@ export async function initializeAgent(
   };
 
   prepareQueuedCodeFileContext(initializedAgent, [initializedAgent], user?.id);
+  prepareSessionFilesContext(
+    initializedAgent,
+    compatibilityAttachments.length > 0
+      ? compatibilityAttachments
+      : requestAttachments.concat(agentContextAttachments),
+  );
   const queuedFileContext = initializedAgent.dynamicToolContextMap?.queued_code_files;
   if (typeof queuedFileContext === 'string') {
     assertModelBoundContent({

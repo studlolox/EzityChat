@@ -40,4 +40,14 @@ describe('buildImageToolContext', () => {
     expect(context).toContain('the `image_ids` array');
     expect(context).toContain('`gemini_image_gen`');
   });
+
+  it('includes filename when available', () => {
+    const files = [{ file_id: 'img-101', filename: 'sketch.png' }];
+    const context = buildImageToolContext({
+      imageFiles: files,
+      toolName: 'edit_image',
+    });
+
+    expect(context).toContain('- img-101 (sketch.png)');
+  });
 });

@@ -899,6 +899,9 @@ export function createFileMethods(mongoose: typeof import('mongoose')): {
       if (toolResourceSet.has(EToolResources.file_search)) {
         orConditions.push({ embedded: true });
       }
+      if (toolResourceSet.has(EToolResources.image_edit)) {
+        orConditions.push({ type: { $regex: '^image/' } });
+      }
 
       // If no conditions to match, return empty
       if (orConditions.length === 0) {
