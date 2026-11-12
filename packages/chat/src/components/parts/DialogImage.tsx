@@ -52,6 +52,8 @@ export interface InpaintEditParams {
   prompt: string;
   maskDataUrl?: string;
   maskBlob?: Blob;
+  compositeDataUrl?: string;
+  compositeBlob?: Blob;
   imageSrc: string;
   args?: Record<string, unknown>;
 }
@@ -665,6 +667,46 @@ export default function DialogImage({
     return { dataUrl, blob };
   }, [strokes, renderStrokes]);
 
+  // Export composite image (base image with colored visual inpainting mask drawn over it)
+  const exportCompositeImage = useCallback(async (): Promise<{
+    dataUrl: string;
+    blob: Blob;
+  } | null> => {
+    const img = imageRef.current;
+    const canvas = canvasRef.current;
+    if (!img || !canvas || strokes.length === 0) return null;
+
+    const naturalW = img.naturalWidth || canvas.width;
+    const naturalH = img.naturalHeight || canvas.height;
+
+    const offscreen = document.createElement('canvas');
+    offscreen.width = naturalW;
+    offscreen.height = naturalH;
+    const ctx = offscreen.getContext('2d');
+    if (!ctx) return null;
+
+    // Draw base image
+    try {
+      ctx.drawImage(img, 0, 0, naturalW, naturalH);
+    } catch {
+      // If cross-origin image tainted canvas, fallback
+      return null;
+    }
+
+    // Draw translucent visual strokes on top
+    const scaleX = naturalW / canvas.width;
+    const scaleY = naturalH / canvas.height;
+    renderStrokes(offscreen, strokes, scaleX, scaleY, false);
+
+    const dataUrl = offscreen.toDataURL('image/png');
+    const blob = await new Promise<Blob | null>((resolve) =>
+      offscreen.toBlob(resolve, 'image/png'),
+    );
+    if (!blob) return null;
+
+    return { dataUrl, blob };
+  }, [strokes, renderStrokes]);
+
   // Submit inpainting / conversational image edit
   const handleSubmitEdit = useCallback(async () => {
     const cleanPrompt = editPrompt.trim();
@@ -676,12 +718,21 @@ export default function DialogImage({
     try {
       let maskDataUrl: string | undefined;
       let maskBlob: Blob | undefined;
+      let compositeDataUrl: string | undefined;
+      let compositeBlob: Blob | undefined;
 
       if (strokes.length > 0) {
-        const maskResult = await exportBinaryMask();
+        const [maskResult, compositeResult] = await Promise.all([
+          exportBinaryMask(),
+          exportCompositeImage(),
+        ]);
         if (maskResult) {
           maskDataUrl = maskResult.dataUrl;
           maskBlob = maskResult.blob;
+        }
+        if (compositeResult) {
+          compositeDataUrl = compositeResult.dataUrl;
+          compositeBlob = compositeResult.blob;
         }
       }
 
@@ -690,6 +741,8 @@ export default function DialogImage({
           prompt: cleanPrompt,
           maskDataUrl,
           maskBlob,
+          compositeDataUrl,
+          compositeBlob,
           imageSrc: src,
           args,
         });
@@ -709,6 +762,7 @@ export default function DialogImage({
     isSubmittingEdit,
     strokes.length,
     exportBinaryMask,
+    exportCompositeImage,
     onEditImage,
     src,
     args,
@@ -958,27 +1012,29 @@ export default function DialogImage({
             }`}
           >
             {/* Inpaint Mode Toggle */}
-            <TooltipAnchor
-              zIndex={TOOLTIP_Z_INDEX}
-              description={localize('com_ui_inpaint_mode')}
-              render={
-                <Button
-                  onClick={() => {
-                    setIsMaskingMode((prev) => !prev);
-                    if (!isMaskingMode) {
-                      resetZoom();
-                      setIsPromptOpen(false);
-                    }
-                  }}
-                  variant={isMaskingMode ? 'default' : 'media'}
-                  size="bare"
-                  className="h-10 w-10"
-                  aria-label={localize('com_ui_inpaint_mode')}
-                >
-                  <Paintbrush className="size-5" aria-hidden="true" />
-                </Button>
-              }
-            />
+            {onEditImage != null && (
+              <TooltipAnchor
+                zIndex={TOOLTIP_Z_INDEX}
+                description={localize('com_ui_inpaint_mode')}
+                render={
+                  <Button
+                    onClick={() => {
+                      setIsMaskingMode((prev) => !prev);
+                      if (!isMaskingMode) {
+                        resetZoom();
+                        setIsPromptOpen(false);
+                      }
+                    }}
+                    variant={isMaskingMode ? 'default' : 'media'}
+                    size="bare"
+                    className="h-10 w-10"
+                    aria-label={localize('com_ui_inpaint_mode')}
+                  >
+                    <Paintbrush className="size-5" aria-hidden="true" />
+                  </Button>
+                }
+              />
+            )}
 
             {/* Rotate Clockwise */}
             {!isMaskingMode && (
@@ -1144,7 +1200,7 @@ export default function DialogImage({
                   ) : (
                     <Sparkles className="size-4" />
                   )}
-                  <span>{localize('com_ui_submit_edit')}</span>
+                  <span className="hidden md:block">{localize('com_ui_submit_edit')}</span>
                 </Button>
               </div>
             </div>

@@ -59,9 +59,23 @@ describe('DialogImage tooltips', () => {
     expect(container?.getAttribute('style')).toContain('rotate(90deg)');
   });
 
-  it('toggles inpaint studio mode and reveals canvas and studio toolbar', () => {
+  it('hides inpaint mode button when onEditImage is not provided', () => {
     render(
       <DialogImage isOpen onOpenChange={jest.fn()} src="/media.png" downloadImage={jest.fn()} />,
+    );
+
+    expect(screen.queryByRole('button', { name: 'com_ui_inpaint_mode' })).not.toBeInTheDocument();
+  });
+
+  it('toggles inpaint studio mode and reveals canvas and studio toolbar', () => {
+    render(
+      <DialogImage
+        isOpen
+        onOpenChange={jest.fn()}
+        src="/media.png"
+        downloadImage={jest.fn()}
+        onEditImage={jest.fn()}
+      />,
     );
 
     const inpaintToggle = screen.getByRole('button', { name: 'com_ui_inpaint_mode' });

@@ -1,6 +1,7 @@
-import React, { useRef, useState } from 'react';
-import { useSetAtom } from 'jotai';
+import React, { useCallback, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getDefaultStore, useSetAtom } from 'jotai';
+import { filesFamily } from '@librechat/chat/react';
 import { DialogImage } from '@librechat/chat/components';
 import { FileSources, apiBaseUrl } from 'librechat-data-provider';
 import {
@@ -12,8 +13,10 @@ import {
   Skeleton,
   Spinner,
 } from '@librechat/client';
+import type { InpaintEditParams } from '@librechat/chat/components';
 import type { TFile } from 'librechat-data-provider';
 import type { LibraryCategory, LibrarySortOption, UnifiedLibraryItem } from './types';
+import type { ExtendedFile } from '~/common';
 import {
   canvasOpenAtom,
   activeCanvasDocIdAtom,
@@ -27,8 +30,8 @@ import {
   triggerDownload,
 } from '~/utils';
 import FilePreviewDialog from '~/components/Chat/Messages/Content/FilePreviewDialog';
+import { useDeleteFilesMutation, useUploadFileMutation } from '~/data-provider';
 import LibraryFileDetailsModal from './LibraryFileDetailsModal';
-import { useDeleteFilesMutation } from '~/data-provider';
 import { SidePanelGroup } from '~/components/SidePanel';
 import { useDocumentTitle, useLocalize } from '~/hooks';
 import { useAuthContext } from '~/hooks/AuthContext';
@@ -78,6 +81,7 @@ export default function LibraryView() {
     open: boolean;
     src: string;
     title: string;
+    item?: UnifiedLibraryItem;
   }>({ open: false, src: '', title: '' });
 
   // Details dialog state
@@ -91,6 +95,7 @@ export default function LibraryView() {
   };
 
   const deleteFilesMutation = useDeleteFilesMutation();
+  const uploadFileMutation = useUploadFileMutation();
 
   const { filteredItems, counts, isLoading, refetchAll } = useLibraryItems(
     activeCategory,
@@ -123,6 +128,7 @@ export default function LibraryView() {
         open: true,
         src: fullUrl,
         title: item.title,
+        item,
       });
       return;
     }
@@ -141,6 +147,66 @@ export default function LibraryView() {
       setPreviewFileState({ open: true, file: item.file });
     }
   };
+
+  const handleEditLibraryImage = useCallback(
+    async ({ prompt, compositeBlob }: InpaintEditParams) => {
+      const currentItem = lightboxState.item;
+      let targetFile: ExtendedFile | null = null;
+
+      if (compositeBlob) {
+        const originalName = currentItem?.file?.filename || currentItem?.title || 'image.png';
+        const baseName = originalName.replace(/\.[^/.]+$/, '');
+        const filename = `${baseName}_inpaint.png`;
+
+        const formData = new FormData();
+        formData.append('file', compositeBlob, filename);
+
+        const uploaded = await uploadFileMutation.mutateAsync(formData);
+        if (uploaded) {
+          targetFile = {
+            progress: 1,
+            attached: true,
+            file_id: uploaded.file_id,
+            filepath: uploaded.filepath,
+            preview: uploaded.filepath,
+            type: uploaded.type || 'image/png',
+            height: uploaded.height,
+            width: uploaded.width,
+            filename: uploaded.filename || filename,
+            size: uploaded.bytes || compositeBlob.size,
+          };
+        }
+      } else if (currentItem?.file) {
+        const f = currentItem.file;
+        targetFile = {
+          progress: 1,
+          attached: true,
+          file_id: f.file_id,
+          filepath: f.filepath,
+          preview: f.filepath,
+          type: f.type,
+          height: f.height,
+          width: f.width,
+          filename: f.filename,
+          source: f.source,
+          size: f.bytes || 0,
+        };
+      }
+
+      if (targetFile) {
+        getDefaultStore().set(filesFamily(0), new Map([[targetFile.file_id, targetFile]]));
+      }
+
+      setLightboxState((prev) => ({ ...prev, open: false }));
+
+      const instruction = compositeBlob
+        ? `In the attached image, edit the highlighted section: "${prompt}".`
+        : `Edit this image: "${prompt}".`;
+
+      navigate(`/c/new?prompt=${encodeURIComponent(instruction)}`);
+    },
+    [lightboxState.item, uploadFileMutation, navigate],
+  );
 
   const handleNavigateToChat = (conversationId: string) => {
     navigate(`/c/${conversationId}`);
@@ -382,6 +448,7 @@ export default function LibraryView() {
           title={lightboxState.title}
           downloadImage={handleDownloadLightboxImage}
           showDetails={false}
+          onEditImage={handleEditLibraryImage}
         />
       )}
 
