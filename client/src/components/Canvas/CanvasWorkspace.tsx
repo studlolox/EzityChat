@@ -10,9 +10,11 @@ import {
   canvasModeAtom,
   activeBoardIdAtom,
 } from './state';
+import { normalizeCanvasLanguage, isWebPreviewableLanguage } from './canvas-language-support';
 import MarkdownLite from '~/components/Chat/Messages/Content/MarkdownLite';
 import { VisualBoardEditor } from './VisualBoardEditor';
 import { CanvasCodeEditor } from './CanvasCodeEditor';
+import { CanvasWebPreview } from './CanvasWebPreview';
 import { CanvasDiffView } from './CanvasDiffView';
 import { CanvasToolbar } from './CanvasToolbar';
 import { CanvasHeader } from './CanvasHeader';
@@ -312,6 +314,8 @@ export function CanvasWorkspace({
     );
   }
 
+  const normalizedLang = normalizeCanvasLanguage(document?.language, localContent);
+
   const renderBodyContent = () => {
     if (activeCandidate && activeCandidate.status === 'pending') {
       return (
@@ -326,13 +330,25 @@ export function CanvasWorkspace({
       );
     }
     if (viewMode === 'edit') {
-      return <CanvasCodeEditor content={localContent} onChange={handleContentChange} />;
+      return (
+        <CanvasCodeEditor
+          content={localContent}
+          language={normalizedLang}
+          onChange={handleContentChange}
+        />
+      );
     }
-    return (
-      <div className="h-full overflow-y-auto p-4 leading-relaxed">
-        <MarkdownLite content={localContent} />
-      </div>
-    );
+    if (isWebPreviewableLanguage(normalizedLang, localContent)) {
+      return <CanvasWebPreview content={localContent} language={normalizedLang} />;
+    }
+    if (normalizedLang === 'markdown') {
+      return (
+        <div className="h-full overflow-y-auto p-4 leading-relaxed">
+          <MarkdownLite content={localContent} />
+        </div>
+      );
+    }
+    return <CanvasCodeEditor content={localContent} language={normalizedLang} readOnly={true} />;
   };
 
   return (
@@ -352,7 +368,8 @@ export function CanvasWorkspace({
       {/* Header */}
       <CanvasHeader
         title={document.title}
-        language={document.language}
+        language={normalizedLang}
+        content={localContent}
         docType={document.docType}
         saveStatus={saveStatus}
         mode="document"

@@ -42,6 +42,7 @@ import {
   SubagentCall,
   SteerPart,
 } from './Parts';
+import CanvasMessageCard from '~/components/Canvas/CanvasMessageCard';
 import { getCachedPreview, getPartKeyIndex } from '~/utils';
 import BackgroundTaskCall from './Parts/BackgroundTaskCall';
 import AskUserQuestionCall from './AskUserQuestionCall';
@@ -203,11 +204,26 @@ const renderHandoff: ToolRenderer = ({ toolCall }) => (
   <AgentHandoff args={toolCall.args ?? ''} name={toolCall.name || ''} />
 );
 
+const renderCanvasTool: ToolRenderer = ({ toolCall, toolCallId, isSubmitting }) => (
+  <CanvasMessageCard
+    toolCallId={toolCallId}
+    name={toolCall.name || ''}
+    args={toolCall.args}
+    output={toolCall.output}
+    runStepStatus={toolCall.runStepStatus}
+    isSubmitting={isSubmitting}
+  />
+);
+
 /** Agent tool cards by tool name; any other name draws the generic card. */
 const tools: Record<string, ToolRenderer> = {
   [Tools.execute_code]: renderExecuteCode,
   [Constants.PROGRAMMATIC_TOOL_CALLING]: renderExecuteCode,
   [Constants.BASH_PROGRAMMATIC_TOOL_CALLING]: renderExecuteCode,
+  create_canvas_document: renderCanvasTool,
+  propose_canvas_edit: renderCanvasTool,
+  create_canvas_board: renderCanvasTool,
+  create_mindmap_board: renderCanvasTool,
   image_gen_oai: renderImageGen,
   image_edit_oai: renderImageGen,
   gemini_image_gen: renderImageGen,

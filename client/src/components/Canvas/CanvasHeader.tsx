@@ -1,10 +1,12 @@
 import React from 'react';
 import { X, FileCode2, History, Check, Loader2, FileText, Network } from 'lucide-react';
+import { normalizeCanvasLanguage } from './canvas-language-support';
 import { useLocalize } from '~/hooks';
 
 export interface CanvasHeaderProps {
   title: string;
   language?: string;
+  content?: string;
   docType?: 'markdown' | 'code';
   saveStatus: 'saved' | 'saving' | 'unsaved' | 'error';
   mode?: 'document' | 'board';
@@ -16,6 +18,7 @@ export interface CanvasHeaderProps {
 export function CanvasHeader({
   title,
   language = 'markdown',
+  content,
   docType = 'markdown',
   saveStatus,
   mode = 'document',
@@ -24,6 +27,7 @@ export function CanvasHeader({
   onOpenHistory,
 }: CanvasHeaderProps) {
   const localize = useLocalize();
+  const normalizedLang = normalizeCanvasLanguage(language, content);
 
   return (
     <div className="border-border-medium bg-surface-primary flex h-12 shrink-0 items-center justify-between border-b px-4">
@@ -33,7 +37,7 @@ export function CanvasHeader({
         <span className="text-text-primary truncate text-sm font-semibold">{title}</span>
         {mode === 'document' && (
           <span className="bg-surface-secondary text-2xs text-text-secondary rounded-md px-2 py-0.5 font-mono font-medium uppercase">
-            {language || docType}
+            {normalizedLang || docType}
           </span>
         )}
       </div>

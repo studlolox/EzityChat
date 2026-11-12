@@ -1,11 +1,26 @@
 import React, { useEffect, useRef } from 'react';
-import { EditorState } from '@codemirror/state';
-import { bracketMatching } from '@codemirror/language';
-import { EditorView, keymap, lineNumbers, highlightActiveLine } from '@codemirror/view';
+import { EditorState, Compartment } from '@codemirror/state';
+import { bracketMatching, indentOnInput } from '@codemirror/language';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
+import {
+  EditorView,
+  keymap,
+  lineNumbers,
+  highlightActiveLine,
+  highlightActiveLineGutter,
+  dropCursor,
+  drawSelection,
+} from '@codemirror/view';
+import {
+  normalizeCanvasLanguage,
+  resolveLanguagePolicy,
+  loadLanguageExtension,
+  canvasSyntaxHighlighting,
+} from './canvas-language-support';
 
 export interface CanvasCodeEditorProps {
   content: string;
+  language?: string;
   readOnly?: boolean;
   onChange?: (newContent: string) => void;
   className?: string;
@@ -13,18 +28,28 @@ export interface CanvasCodeEditorProps {
 
 export function CanvasCodeEditor({
   content,
+  language,
   readOnly = false,
   onChange,
   className = '',
 }: CanvasCodeEditorProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
-  const initialContent = useRef(content);
+  const languageCompartmentRef = useRef(new Compartment());
+  const editableCompartmentRef = useRef(new Compartment());
+  const lineNumbersCompartmentRef = useRef(new Compartment());
+  const lineWrappingCompartmentRef = useRef(new Compartment());
+
+  const languageSeqRef = useRef(0);
   const contentRef = useRef(content);
   contentRef.current = content;
 
+  const normalizedLang = normalizeCanvasLanguage(language, content);
+
   useEffect(() => {
     if (!containerRef.current) return;
+
+    const policy = resolveLanguagePolicy(normalizedLang);
 
     const theme = EditorView.theme({
       '&': {
@@ -35,11 +60,14 @@ export function CanvasCodeEditor({
       },
       '.cm-scroller': {
         overflow: 'auto',
-        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+        fontFamily:
+          'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+        lineHeight: '1.6',
       },
       '.cm-content': {
-        caretColor: 'currentColor',
-        padding: '12px 0',
+        caretColor: 'var(--text-accent, #3b82f6)',
+        padding: '16px',
+        minHeight: '100%',
       },
       '.cm-gutters': {
         backgroundColor: 'transparent',
@@ -53,7 +81,11 @@ export function CanvasCodeEditor({
         backgroundColor: 'var(--surface-secondary, rgba(128,128,128,0.05))',
       },
       '.cm-cursor': {
-        borderLeftColor: 'currentColor',
+        borderLeftColor: 'var(--text-accent, #3b82f6)',
+        borderLeftWidth: '2px',
+      },
+      '&.cm-focused .cm-selectionBackground, ::selection': {
+        backgroundColor: 'rgba(59, 130, 246, 0.25) !important',
       },
     });
 
@@ -66,16 +98,22 @@ export function CanvasCodeEditor({
     });
 
     const state = EditorState.create({
-      doc: initialContent.current,
+      doc: content,
       extensions: [
-        lineNumbers(),
+        theme,
+        canvasSyntaxHighlighting,
+        lineNumbersCompartmentRef.current.of(policy.showLineNumbers ? lineNumbers() : []),
+        lineWrappingCompartmentRef.current.of(policy.wrapLines ? EditorView.lineWrapping : []),
+        editableCompartmentRef.current.of(EditorView.editable.of(!readOnly)),
+        languageCompartmentRef.current.of([]),
         highlightActiveLine(),
+        highlightActiveLineGutter(),
         bracketMatching(),
+        indentOnInput(),
+        dropCursor(),
+        drawSelection(),
         history(),
         keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
-        EditorView.lineWrapping,
-        EditorState.readOnly.of(readOnly),
-        theme,
         updateListener,
       ],
     });
@@ -87,22 +125,58 @@ export function CanvasCodeEditor({
 
     viewRef.current = view;
 
+    // Load language grammar dynamically
+    const seq = ++languageSeqRef.current;
+    loadLanguageExtension(normalizedLang).then((ext) => {
+      if (seq === languageSeqRef.current && viewRef.current) {
+        viewRef.current.dispatch({
+          effects: languageCompartmentRef.current.reconfigure(ext),
+        });
+      }
+    });
+
     return () => {
       view.destroy();
       viewRef.current = null;
     };
-  }, [readOnly, onChange]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Synchronize incoming external content updates if different from current editor content
+  // Handle dynamic language updates
+  useEffect(() => {
+    if (!viewRef.current) return;
+    const policy = resolveLanguagePolicy(normalizedLang);
+    const seq = ++languageSeqRef.current;
+
+    loadLanguageExtension(normalizedLang).then((ext) => {
+      if (seq !== languageSeqRef.current || !viewRef.current) return;
+      viewRef.current.dispatch({
+        effects: [
+          languageCompartmentRef.current.reconfigure(ext),
+          lineNumbersCompartmentRef.current.reconfigure(
+            policy.showLineNumbers ? lineNumbers() : [],
+          ),
+          lineWrappingCompartmentRef.current.reconfigure(
+            policy.wrapLines ? EditorView.lineWrapping : [],
+          ),
+        ],
+      });
+    });
+  }, [normalizedLang]);
+
+  // Handle readOnly updates
+  useEffect(() => {
+    if (!viewRef.current) return;
+    viewRef.current.dispatch({
+      effects: editableCompartmentRef.current.reconfigure(EditorView.editable.of(!readOnly)),
+    });
+  }, [readOnly]);
+
+  // Synchronize incoming external content updates if different
   useEffect(() => {
     const view = viewRef.current;
     if (view && content !== view.state.doc.toString()) {
       view.dispatch({
-        changes: {
-          from: 0,
-          to: view.state.doc.length,
-          insert: content,
-        },
+        changes: { from: 0, to: view.state.doc.length, insert: content },
       });
     }
   }, [content]);

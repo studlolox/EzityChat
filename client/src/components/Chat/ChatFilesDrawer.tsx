@@ -29,6 +29,7 @@ import {
 import FilePreviewDialog, {
   formatBytes,
 } from '~/components/Chat/Messages/Content/FilePreviewDialog';
+import { normalizeCanvasLanguage } from '~/components/Canvas/canvas-language-support';
 import ExportModal from '~/components/Nav/ExportConversation/ExportModal';
 import { useGetFiles } from '~/data-provider';
 import { triggerDownload } from '~/utils';
@@ -361,7 +362,9 @@ export function ChatFilesDrawer({
                             {localize('com_ui_canvas_coeditor_badge')}
                           </span>
                           <span>·</span>
-                          <span className="uppercase">{doc.language || doc.docType}</span>
+                          <span className="uppercase">
+                            {normalizeCanvasLanguage(doc.language, doc.title) || doc.docType}
+                          </span>
                         </p>
                       </div>
                     </div>
