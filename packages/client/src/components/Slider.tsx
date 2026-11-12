@@ -19,6 +19,7 @@ const Slider: React.ForwardRefExoticComponent<SliderProps & React.RefAttributes<
       {
         className,
         onDoubleClick,
+        onPointerDown,
         'aria-labelledby': ariaLabelledBy,
         'aria-label': ariaLabel,
         'aria-describedby': ariaDescribedBy,
@@ -30,6 +31,15 @@ const Slider: React.ForwardRefExoticComponent<SliderProps & React.RefAttributes<
       <SliderPrimitive.Root
         ref={ref}
         {...props}
+        onPointerDown={(event) => {
+          onPointerDown?.(event);
+          if (!event.defaultPrevented && !event.cancelable) {
+            Object.defineProperty(event, 'defaultPrevented', {
+              value: true,
+              configurable: true,
+            });
+          }
+        }}
         {...{
           className: cn(
             'relative flex w-full cursor-pointer touch-none select-none items-center',

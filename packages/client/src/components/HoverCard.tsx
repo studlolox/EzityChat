@@ -7,7 +7,29 @@ const HoverCard: React.FC<HoverCardPrimitive.HoverCardProps> = HoverCardPrimitiv
 
 const HoverCardTrigger: React.ForwardRefExoticComponent<
   HoverCardPrimitive.HoverCardTriggerProps & React.RefAttributes<HTMLAnchorElement>
-> = HoverCardPrimitive.Trigger;
+> = React.forwardRef<
+  React.ElementRef<typeof HoverCardPrimitive.Trigger>,
+  HoverCardPrimitive.HoverCardTriggerProps
+>(({ onTouchStart, ...props }, ref) => (
+  <HoverCardPrimitive.Trigger
+    ref={ref}
+    {...props}
+    onTouchStart={(event) => {
+      onTouchStart?.(event);
+      if (!event.defaultPrevented) {
+        if (event.cancelable) {
+          event.preventDefault();
+        } else {
+          Object.defineProperty(event, 'defaultPrevented', {
+            value: true,
+            configurable: true,
+          });
+        }
+      }
+    }}
+  />
+));
+HoverCardTrigger.displayName = HoverCardPrimitive.Trigger.displayName;
 
 const HoverCardPortal: React.FC<HoverCardPrimitive.HoverCardPortalProps> =
   HoverCardPrimitive.Portal;
