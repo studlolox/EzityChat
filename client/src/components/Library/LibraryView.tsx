@@ -27,6 +27,7 @@ import {
   triggerDownload,
 } from '~/utils';
 import FilePreviewDialog from '~/components/Chat/Messages/Content/FilePreviewDialog';
+import LibraryFileDetailsModal from './LibraryFileDetailsModal';
 import { useDeleteFilesMutation } from '~/data-provider';
 import { SidePanelGroup } from '~/components/SidePanel';
 import { useDocumentTitle, useLocalize } from '~/hooks';
@@ -78,6 +79,16 @@ export default function LibraryView() {
     src: string;
     title: string;
   }>({ open: false, src: '', title: '' });
+
+  // Details dialog state
+  const [detailsDialog, setDetailsDialog] = useState<{
+    open: boolean;
+    item: UnifiedLibraryItem | null;
+  }>({ open: false, item: null });
+
+  const handleShowDetails = (item: UnifiedLibraryItem) => {
+    setDetailsDialog({ open: true, item });
+  };
 
   const deleteFilesMutation = useDeleteFilesMutation();
 
@@ -249,24 +260,24 @@ export default function LibraryView() {
   const allSelected = filteredItems.length > 0 && selectedItemIds.size === filteredItems.length;
 
   const renderSkeleton = () => (
-    <div className="grid min-w-0 grid-cols-[repeat(auto-fill,minmax(min(100%,max(20rem,calc((100%_-_3.75rem)/4))),1fr))] gap-5">
+    <div className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(min(100%,max(16rem,calc((100%_-_3.75rem)/4))),1fr))] sm:gap-5">
       {[...Array(8)].map((_, i) => (
         <div
           key={i}
-          className="rounded-theme-surface border-border-light bg-surface-card flex h-full min-h-[17.5rem] flex-col border p-5"
+          className="rounded-theme-surface border-border-light bg-surface-card flex h-full min-h-[12.5rem] flex-col border p-3 sm:min-h-[15rem] sm:p-4"
         >
           <div className="flex items-start justify-between gap-3">
-            <Skeleton className="size-12 rounded-2xl" />
-            <Skeleton className="h-6 w-16 rounded-full" />
+            <Skeleton className="size-10 rounded-xl" />
+            <Skeleton className="h-5 w-14 rounded-full" />
           </div>
-          <Skeleton className="mt-4 h-6 w-3/4" />
-          <div className="mt-3 mb-5 space-y-2">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-5/6" />
+          <Skeleton className="mt-3 h-5 w-3/4" />
+          <div className="mt-2 mb-4 space-y-1.5">
+            <Skeleton className="h-3.5 w-full" />
+            <Skeleton className="h-3.5 w-4/5" />
           </div>
-          <div className="border-border-inset mt-auto flex justify-between gap-3 border-t pt-4">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-4 w-20" />
+          <div className="border-border-inset mt-auto flex justify-between gap-3 border-t pt-3">
+            <Skeleton className="h-3.5 w-20" />
+            <Skeleton className="h-3.5 w-16" />
           </div>
         </div>
       ))}
@@ -288,6 +299,7 @@ export default function LibraryView() {
           onNavigateToChat={handleNavigateToChat}
           onDownloadItem={handleDownloadItem}
           onDeleteItem={handleDeleteItem}
+          onShowDetails={handleShowDetails}
           isSelectMode={isSelectMode}
           selectedItemIds={selectedItemIds}
           onToggleSelect={handleToggleSelect}
@@ -304,6 +316,7 @@ export default function LibraryView() {
         onNavigateToChat={handleNavigateToChat}
         onDownloadItem={handleDownloadItem}
         onDeleteItem={handleDeleteItem}
+        onShowDetails={handleShowDetails}
         isSelectMode={isSelectMode}
         selectedItemIds={selectedItemIds}
         onToggleSelect={handleToggleSelect}
@@ -419,6 +432,16 @@ export default function LibraryView() {
           </div>
         </OGDialogContent>
       </OGDialog>
+
+      {/* File Details & Metadata Modal */}
+      <LibraryFileDetailsModal
+        open={detailsDialog.open}
+        onOpenChange={(open) => setDetailsDialog((prev) => ({ ...prev, open }))}
+        item={detailsDialog.item}
+        onPreview={handlePreviewFile}
+        onDownload={handleDownloadItem}
+        onNavigateToChat={handleNavigateToChat}
+      />
     </div>
   );
 }

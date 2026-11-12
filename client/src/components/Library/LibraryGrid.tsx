@@ -12,6 +12,7 @@ interface LibraryGridProps {
   onNavigateToChat: (conversationId: string) => void;
   onDownloadItem: (item: UnifiedLibraryItem) => void;
   onDeleteItem: (item: UnifiedLibraryItem) => void;
+  onShowDetails?: (item: UnifiedLibraryItem) => void;
   isSelectMode?: boolean;
   selectedItemIds?: Set<string>;
   onToggleSelect?: (item: UnifiedLibraryItem) => void;
@@ -25,6 +26,7 @@ export default function LibraryGrid({
   onNavigateToChat,
   onDownloadItem,
   onDeleteItem,
+  onShowDetails,
   isSelectMode = false,
   selectedItemIds = new Set(),
   onToggleSelect,
@@ -48,7 +50,7 @@ export default function LibraryGrid({
   }
 
   return (
-    <div className="grid min-w-0 grid-cols-[repeat(auto-fill,minmax(min(100%,max(20rem,calc((100%_-_3.75rem)/4))),1fr))] gap-5">
+    <div className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(min(100%,max(16rem,calc((100%_-_3.75rem)/4))),1fr))] sm:gap-5">
       {items.map((item) => (
         <LibraryCard
           key={item.id}
@@ -59,6 +61,7 @@ export default function LibraryGrid({
           onNavigateToChat={onNavigateToChat}
           onDownloadItem={onDownloadItem}
           onDeleteItem={onDeleteItem}
+          onShowDetails={onShowDetails}
           isSelectMode={isSelectMode}
           isSelected={selectedItemIds.has(item.id)}
           onToggleSelect={onToggleSelect}

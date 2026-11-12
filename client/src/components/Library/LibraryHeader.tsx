@@ -2,6 +2,11 @@ import React, { useId, useRef, useState } from 'react';
 import * as Ariakit from '@ariakit/react';
 import { Button, DropdownPopup, FilterInput, Spinner } from '@librechat/client';
 import {
+  ArrowDownAZ,
+  ArrowDownWideNarrow,
+  ArrowUpNarrowWide,
+  ArrowUpZA,
+  Check,
   CheckSquare,
   Download,
   Ellipsis,
@@ -13,12 +18,26 @@ import {
   X,
 } from 'lucide-react';
 import type { LibraryCategory, LibrarySortOption } from './types';
-import type { MenuItemProps } from '~/common';
+import type { MenuItemProps, RenderProp } from '~/common';
 import OpenSidebar from '~/components/Chat/Menus/OpenSidebar';
 import useDrawerViewport from '~/hooks/Nav/useDrawerViewport';
-import LibrarySortDropdown from './LibrarySortDropdown';
 import { useLocalize } from '~/hooks';
 import { cn } from '~/utils';
+
+function renderCheckMenuItem(isSelected: boolean): RenderProp {
+  return function CheckMenuItem({ className, children, ...props }) {
+    return (
+      <div {...props} className={cn(className, 'flex w-full items-center justify-between gap-5')}>
+        <span className="flex items-center truncate">{children}</span>
+        {isSelected ? (
+          <Check className="text-text-primary size-4 shrink-0" aria-hidden="true" />
+        ) : (
+          <span className="size-4 shrink-0" aria-hidden="true" />
+        )}
+      </div>
+    );
+  };
+}
 
 interface LibraryHeaderProps {
   activeCategory: LibraryCategory;
@@ -109,6 +128,8 @@ export default function LibraryHeader({
       label: localize('com_ui_library_grid_view'),
       icon: <LayoutGrid className="size-4" />,
       ariaChecked: viewMode === 'grid',
+      ariaRole: 'menuitemradio',
+      render: renderCheckMenuItem(viewMode === 'grid'),
       onClick: () => {
         onViewModeChange('grid');
         setIsMenuOpen(false);
@@ -119,8 +140,59 @@ export default function LibraryHeader({
       label: localize('com_ui_library_list_view'),
       icon: <List className="size-4" />,
       ariaChecked: viewMode === 'list',
+      ariaRole: 'menuitemradio',
+      render: renderCheckMenuItem(viewMode === 'list'),
       onClick: () => {
         onViewModeChange('list');
+        setIsMenuOpen(false);
+      },
+    },
+    { separate: true },
+    {
+      id: 'library-sort-newest',
+      label: localize('com_ui_sort_newest'),
+      icon: <ArrowDownWideNarrow className="size-4" />,
+      ariaChecked: sort === 'newest',
+      ariaRole: 'menuitemradio',
+      render: renderCheckMenuItem(sort === 'newest'),
+      onClick: () => {
+        onSortChange('newest');
+        setIsMenuOpen(false);
+      },
+    },
+    {
+      id: 'library-sort-oldest',
+      label: localize('com_ui_sort_oldest'),
+      icon: <ArrowUpNarrowWide className="size-4" />,
+      ariaChecked: sort === 'oldest',
+      ariaRole: 'menuitemradio',
+      render: renderCheckMenuItem(sort === 'oldest'),
+      onClick: () => {
+        onSortChange('oldest');
+        setIsMenuOpen(false);
+      },
+    },
+    {
+      id: 'library-sort-name-asc',
+      label: localize('com_ui_sort_a_z'),
+      icon: <ArrowDownAZ className="size-4" />,
+      ariaChecked: sort === 'name_asc',
+      ariaRole: 'menuitemradio',
+      render: renderCheckMenuItem(sort === 'name_asc'),
+      onClick: () => {
+        onSortChange('name_asc');
+        setIsMenuOpen(false);
+      },
+    },
+    {
+      id: 'library-sort-name-desc',
+      label: localize('com_ui_sort_z_a'),
+      icon: <ArrowUpZA className="size-4" />,
+      ariaChecked: sort === 'name_desc',
+      ariaRole: 'menuitemradio',
+      render: renderCheckMenuItem(sort === 'name_desc'),
+      onClick: () => {
+        onSortChange('name_desc');
         setIsMenuOpen(false);
       },
     },
@@ -170,7 +242,7 @@ export default function LibraryHeader({
           <RefreshCw className={cn('size-4', isLoading && 'animate-spin')} />
         </Button>
 
-        {/* More Options Dropdown (Select, Grid view, List view) */}
+        {/* More Options Dropdown (Select, View mode, Sorting) */}
         <DropdownPopup
           portal={true}
           menuId={menuId}
@@ -178,6 +250,7 @@ export default function LibraryHeader({
           unmountOnHide={true}
           isOpen={isMenuOpen}
           setIsOpen={setIsMenuOpen}
+          minWidth="14rem"
           items={menuItems}
           trigger={
             <Ariakit.MenuButton
@@ -298,14 +371,11 @@ export default function LibraryHeader({
           })}
         </div>
 
-        {/* Sort Dropdown & Counter on Right */}
-        <div className="ms-auto flex shrink-0 items-center gap-2">
-          <LibrarySortDropdown value={sort} onChange={onSortChange} />
-          <div className="text-text-secondary hidden shrink-0 text-xs sm:block">
-            {counts.all !== 1
-              ? localize('com_ui_library_item_count_plural', { count: counts.all })
-              : localize('com_ui_library_item_count', { count: counts.all })}
-          </div>
+        {/* Counter on Right */}
+        <div className="text-text-secondary ms-auto hidden shrink-0 text-xs sm:block">
+          {counts.all !== 1
+            ? localize('com_ui_library_item_count_plural', { count: counts.all })
+            : localize('com_ui_library_item_count', { count: counts.all })}
         </div>
       </div>
     </div>

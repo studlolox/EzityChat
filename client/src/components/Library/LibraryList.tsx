@@ -10,6 +10,7 @@ import {
   FileSpreadsheet,
   FileText,
   Image as ImageIcon,
+  Info,
   Layers,
   MessageSquare,
   Network,
@@ -29,6 +30,7 @@ interface LibraryListProps {
   onNavigateToChat: (conversationId: string) => void;
   onDownloadItem: (item: UnifiedLibraryItem) => void;
   onDeleteItem: (item: UnifiedLibraryItem) => void;
+  onShowDetails?: (item: UnifiedLibraryItem) => void;
   isSelectMode?: boolean;
   selectedItemIds?: Set<string>;
   onToggleSelect?: (item: UnifiedLibraryItem) => void;
@@ -50,11 +52,13 @@ function ListRowActionMenu({
   onPreview,
   onDownload,
   onDelete,
+  onShowDetails,
 }: {
   item: UnifiedLibraryItem;
   onPreview: (item: UnifiedLibraryItem) => void;
   onDownload: (item: UnifiedLibraryItem) => void;
   onDelete: (item: UnifiedLibraryItem) => void;
+  onShowDetails?: (item: UnifiedLibraryItem) => void;
 }) {
   const localize = useLocalize();
   const menuId = useId();
@@ -78,6 +82,16 @@ function ListRowActionMenu({
       onClick: (e) => {
         e?.stopPropagation?.();
         onDownload(item);
+        setIsOpen(false);
+      },
+    },
+    {
+      id: `list-details-${item.id}`,
+      label: localize('com_ui_details'),
+      icon: <Info className="size-4" />,
+      onClick: (e) => {
+        e?.stopPropagation?.();
+        onShowDetails?.(item);
         setIsOpen(false);
       },
     },
@@ -128,6 +142,7 @@ export default function LibraryList({
   onNavigateToChat,
   onDownloadItem,
   onDeleteItem,
+  onShowDetails,
   isSelectMode = false,
   selectedItemIds = new Set(),
   onToggleSelect,
@@ -355,6 +370,7 @@ export default function LibraryList({
                       onPreview={handlePreview}
                       onDownload={onDownloadItem}
                       onDelete={onDeleteItem}
+                      onShowDetails={onShowDetails}
                     />
                   </td>
                 </tr>

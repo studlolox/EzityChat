@@ -9,7 +9,7 @@ import {
   FileCode,
   FileSpreadsheet,
   FileText,
-  MessageSquare,
+  Info,
   Network,
   Square,
   Trash2,
@@ -19,6 +19,7 @@ import type { MenuItemProps } from '~/common';
 import { cn, formatDate, getOrGeneratePdfThumbnail } from '~/utils';
 import { LiveDocThumbnail } from './LiveDocThumbnail';
 import { MindmapThumbnail } from './MindmapThumbnail';
+import { formatFileSize } from '~/utils/files';
 import { useLocalize } from '~/hooks';
 
 interface LibraryCardProps {
@@ -29,6 +30,7 @@ interface LibraryCardProps {
   onNavigateToChat: (conversationId: string) => void;
   onDownloadItem: (item: UnifiedLibraryItem) => void;
   onDeleteItem: (item: UnifiedLibraryItem) => void;
+  onShowDetails?: (item: UnifiedLibraryItem) => void;
   isSelectMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: (item: UnifiedLibraryItem) => void;
@@ -105,7 +107,7 @@ function PdfCardThumbnail({ item }: { item: UnifiedLibraryItem }) {
 
   if (thumbUrl) {
     return (
-      <div className="bg-surface-tertiary relative h-44 w-full shrink-0 overflow-hidden">
+      <div className="bg-surface-tertiary relative h-32 w-full shrink-0 overflow-hidden sm:h-38 md:h-44">
         <img
           src={thumbUrl}
           alt={item.title}
@@ -121,14 +123,9 @@ function PdfCardThumbnail({ item }: { item: UnifiedLibraryItem }) {
   }
 
   return (
-    <div className="bg-surface-secondary/50 border-border-inset flex items-center justify-between border-b px-4 py-3">
-      <div className="flex items-center gap-2.5">
-        <div className="bg-surface-tertiary ring-border-chrome flex size-8 shrink-0 items-center justify-center rounded-lg ring-1">
-          {getDocumentIcon(item)}
-        </div>
-        <span className="border-border-chrome bg-surface-card text-text-secondary text-3xs rounded-md border px-2 py-0.5 font-mono font-medium tracking-wider">
-          {localize('com_ui_library_pdf')}
-        </span>
+    <div className="bg-surface-secondary/50 border-border-inset flex h-32 w-full shrink-0 items-center justify-center border-b p-4 sm:h-38 md:h-44">
+      <div className="bg-surface-tertiary ring-border-chrome flex size-12 shrink-0 items-center justify-center rounded-xl ring-1">
+        {getDocumentIcon(item)}
       </div>
     </div>
   );
@@ -139,9 +136,10 @@ export default function LibraryCard({
   onOpenCanvasDoc,
   onOpenCanvasBoard,
   onPreviewFile,
-  onNavigateToChat,
+  onNavigateToChat: _onNavigateToChat,
   onDownloadItem,
   onDeleteItem,
+  onShowDetails,
   isSelectMode = false,
   isSelected = false,
   onToggleSelect,
@@ -162,6 +160,11 @@ export default function LibraryCard({
         item.title,
       ));
   const thumbnailUrl = isImage ? getThumbnailUrl(item.previewUrl) : undefined;
+
+  const rawBytes = item.size ?? item.file?.bytes;
+  const formattedSize = rawBytes != null && rawBytes > 0 ? formatFileSize(rawBytes) : null;
+  const extension = getBadgeText(item);
+  const formattedDate = item.updatedAt ? formatDate(item.updatedAt) : '';
 
   const handleCardClick = () => {
     if (isSelectMode) {
@@ -208,6 +211,16 @@ export default function LibraryCard({
         setIsMenuOpen(false);
       },
     },
+    {
+      id: `details-${item.id}`,
+      label: localize('com_ui_details'),
+      icon: <Info className="size-4" />,
+      onClick: (e) => {
+        e?.stopPropagation?.();
+        onShowDetails?.(item);
+        setIsMenuOpen(false);
+      },
+    },
     { separate: true },
     {
       id: `delete-${item.id}`,
@@ -226,7 +239,7 @@ export default function LibraryCard({
     <article
       onClick={handleCardClick}
       className={cn(
-        'group rounded-theme-surface bg-surface-card relative flex h-full min-h-[17.5rem] min-w-0 cursor-pointer flex-col overflow-hidden border transition-all duration-150',
+        'group rounded-theme-surface bg-surface-card relative flex h-full min-h-[12.5rem] min-w-0 cursor-pointer flex-col overflow-hidden border transition-all duration-150 sm:min-h-[15rem] md:min-h-[16.5rem]',
         isSelected
           ? 'border-border-chrome-heavy ring-border-chrome-heavy ring-2'
           : 'border-border-light hover:border-border-medium hover:bg-surface-card-hover',
@@ -240,7 +253,7 @@ export default function LibraryCard({
             e.stopPropagation();
             onToggleSelect?.(item);
           }}
-          className="bg-surface-secondary/90 hover:bg-surface-tertiary border-border-chrome absolute start-3 top-3 z-30 flex size-7 cursor-pointer items-center justify-center rounded-lg border shadow-xs backdrop-blur-xs transition-colors"
+          className="bg-surface-secondary/90 hover:bg-surface-tertiary border-border-chrome absolute start-2.5 top-2.5 z-30 flex size-7 cursor-pointer items-center justify-center rounded-lg border shadow-xs backdrop-blur-xs transition-colors"
           aria-label={localize('com_ui_library_select')}
         >
           {isSelected ? (
@@ -251,9 +264,35 @@ export default function LibraryCard({
         </button>
       )}
 
+      {/* Floating More Actions Dropdown (Top Right) */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="absolute end-2.5 top-2.5 z-30 flex items-center justify-center"
+      >
+        <DropdownPopup
+          portal={true}
+          menuId={menuId}
+          focusLoop={true}
+          unmountOnHide={true}
+          isOpen={isMenuOpen}
+          setIsOpen={setIsMenuOpen}
+          items={menuItems}
+          trigger={
+            <Ariakit.MenuButton
+              id={`library-item-menu-${item.id}`}
+              aria-label={localize('com_ui_actions')}
+              aria-expanded={isMenuOpen}
+              className="bg-surface-secondary/90 hover:bg-surface-tertiary border-border-chrome text-text-secondary hover:text-text-primary focus-visible:ring-text-primary flex size-7 cursor-pointer items-center justify-center rounded-lg border shadow-xs backdrop-blur-xs transition-colors focus-visible:ring-2 focus-visible:outline-hidden"
+            >
+              <Ellipsis className="size-4" aria-hidden="true" />
+            </Ariakit.MenuButton>
+          }
+        />
+      </div>
+
       {/* Visual Header / Thumbnail */}
       {isImage && (
-        <div className="bg-surface-tertiary relative h-44 w-full shrink-0 overflow-hidden">
+        <div className="bg-surface-tertiary relative h-32 w-full shrink-0 overflow-hidden sm:h-38 md:h-44">
           <img
             src={thumbnailUrl}
             alt={item.title}
@@ -265,88 +304,52 @@ export default function LibraryCard({
       )}
       {!isImage && isPdf && <PdfCardThumbnail item={item} />}
       {!isImage && !isPdf && isMindmap && (
-        <div className="relative h-44 w-full shrink-0 overflow-hidden">
+        <div className="relative h-32 w-full shrink-0 overflow-hidden sm:h-38 md:h-44">
           <MindmapThumbnail item={item} />
         </div>
       )}
       {!isImage && !isPdf && !isMindmap && isLiveDoc && (
-        <div className="relative h-44 w-full shrink-0 overflow-hidden">
+        <div className="relative h-32 w-full shrink-0 overflow-hidden sm:h-38 md:h-44">
           <LiveDocThumbnail item={item} />
         </div>
       )}
       {!isImage && !isPdf && !isMindmap && !isLiveDoc && (
-        <div className="bg-surface-secondary/50 border-border-inset flex items-center justify-between border-b px-4 py-3">
-          <div className="flex items-center gap-2.5">
-            <div className="bg-surface-tertiary ring-border-chrome flex size-8 shrink-0 items-center justify-center rounded-lg ring-1">
-              {getDocumentIcon(item)}
-            </div>
-            <span className="border-border-chrome bg-surface-card text-text-secondary text-3xs rounded-md border px-2 py-0.5 font-mono font-medium tracking-wider">
-              {getBadgeText(item)}
-            </span>
+        <div className="bg-surface-secondary/50 border-border-inset flex h-32 w-full shrink-0 items-center justify-center border-b p-4 sm:h-38 md:h-44">
+          <div className="bg-surface-tertiary ring-border-chrome flex size-12 shrink-0 items-center justify-center rounded-xl ring-1">
+            {getDocumentIcon(item)}
           </div>
         </div>
       )}
 
-      {/* Card Body */}
-      <div className="flex min-h-0 flex-1 flex-col p-4">
-        {/* Title */}
-        <h2 className="text-text-primary line-clamp-2 text-sm leading-snug font-semibold break-words">
+      {/* Card Footer / Info Area */}
+      <div className="flex min-w-0 flex-1 flex-col justify-between p-3 sm:p-3.5">
+        <h2
+          title={item.title}
+          className="text-text-primary line-clamp-2 text-xs leading-snug font-semibold break-words sm:text-sm"
+        >
           {item.title}
         </h2>
 
-        {/* Subtitle / Metadata */}
-        <p className="text-text-secondary mt-1.5 mb-3 line-clamp-2 text-xs leading-relaxed break-words">
-          {item.subtitle}
-        </p>
-
-        {/* Footer */}
-        <footer className="border-border-inset relative mt-auto flex min-w-0 items-center justify-between gap-2 border-t pt-3">
-          <div className="min-w-0">
-            {item.conversationId ? (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (item.conversationId) {
-                    onNavigateToChat(item.conversationId);
-                  }
-                }}
-                title={localize('com_ui_library_from_chat')}
-                className="hover:bg-surface-tertiary text-text-secondary hover:text-text-primary inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs transition-colors"
-              >
-                <MessageSquare className="size-3 shrink-0" />
-                <span className="truncate">{localize('com_ui_library_from_chat')}</span>
-              </button>
-            ) : (
-              <span className="text-text-tertiary text-2xs">
-                {item.updatedAt ? formatDate(item.updatedAt) : ''}
+        {/* Under it: 'file size · file extension only · date' */}
+        <div className="text-text-secondary text-3xs sm:text-2xs mt-2 flex items-center gap-1.5 truncate">
+          {formattedSize && (
+            <>
+              <span>{formattedSize}</span>
+              <span className="text-text-tertiary" aria-hidden="true">
+                •
               </span>
-            )}
-          </div>
-
-          {/* Bottom-right More Actions Dropdown */}
-          <div onClick={(e) => e.stopPropagation()} className="shrink-0">
-            <DropdownPopup
-              portal={true}
-              menuId={menuId}
-              focusLoop={true}
-              unmountOnHide={true}
-              isOpen={isMenuOpen}
-              setIsOpen={setIsMenuOpen}
-              items={menuItems}
-              trigger={
-                <Ariakit.MenuButton
-                  id={`library-item-menu-${item.id}`}
-                  aria-label={localize('com_ui_actions')}
-                  aria-expanded={isMenuOpen}
-                  className="hover:bg-surface-tertiary text-text-secondary hover:text-text-primary focus-visible:ring-text-primary flex size-7 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-hidden"
-                >
-                  <Ellipsis className="size-4" aria-hidden="true" />
-                </Ariakit.MenuButton>
-              }
-            />
-          </div>
-        </footer>
+            </>
+          )}
+          <span className="font-mono uppercase">{extension}</span>
+          {formattedDate && (
+            <>
+              <span className="text-text-tertiary" aria-hidden="true">
+                •
+              </span>
+              <span>{formattedDate}</span>
+            </>
+          )}
+        </div>
       </div>
     </article>
   );
