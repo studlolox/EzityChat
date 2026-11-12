@@ -1,10 +1,44 @@
-# LibreChat contributor and agent guidance
+# EzityChat contributor and agent guidance
 
-`AGENTS.md` is the repository's contributor guidance. Backend code lives in `packages/api`
-(TypeScript) and `packages/data-schemas` (database methods); `api` is legacy Express wiring.
-Shared API types and services live in `packages/data-provider`, and the React app lives in
-`client` with shared primitives in `packages/client`. Chat state, transport and message components
-are moving into `packages/chat` (`@librechat/chat`), which never imports the app.
+`AGENTS.md` is the repository's contributor guidance. EzityChat is an AI companion
+platform designed with a **strict mobile-first UI architecture**, connecting exclusively to the
+**Ezity AI Gateway** for LLM inference and ComfyUI multimodal generation. All other external model
+APIs (OpenAI, Anthropic, Google Gemini, Azure, Bedrock, etc.) are strictly turned off and disabled.
+
+Backend code lives in `packages/api` (TypeScript) and `packages/data-schemas` (database methods);
+`api` is legacy Express wiring. Shared API types and services live in `packages/data-provider`, and
+the React app lives in `client` with shared primitives in `packages/client`. Chat state, transport
+and message components are moving into `packages/chat` (`@librechat/chat`), which never imports the app.
+
+## Ezity AI Gateway & Model Architecture
+
+- **Exclusive Gateway**: EzityChat routes all model traffic exclusively through **Ezity Gateway**
+  (`endpoints.custom` in `librechat.yaml`). Default models include `ezity-ai` (companion) and
+  `ezity-ai-coder` (engineering specialist).
+- **All other model APIs turned off**: Standard third-party endpoints (`openAI`, `anthropic`,
+  `google`, `azureOpenAI`, `bedrock`, `assistants`, and `agents`) are disabled via `ENDPOINTS=custom` in `.env`.
+  Do not introduce dependencies, hard-coded calls, or UI controls for external providers.
+- **Model spec enforcement**: `modelSpecs.enforce: true` in `librechat.yaml` ensures client requests
+  cannot bypass the gateway or target unauthorized models.
+- **ComfyUI Integration**: Image generation (`generate_image`) and image editing/inpainting/outpainting
+  (`edit_image`) are powered by internal ComfyUI structured tools wired directly to gateway workflows.
+
+## Mobile-First UI Conventions
+
+EzityChat follows a strict **mobile-first design system** (see `.agents/skills/mobile-first-ui`):
+
+- **Mobile-first Tailwind**: Base styles without prefix target narrow mobile touchscreens (`320px` to
+  `639px`). Progressively enhance larger viewports using `sm:`, `md:`, and `lg:`. **Never** use desktop-first
+  antipatterns such as `max-sm:`, `max-md:`, or `max-lg:`.
+- **Touch target ergonomics**: All interactive controls (buttons, icons, menu items, pills) must satisfy
+  a minimum hit area of `44×44px` with thumb-zone accessibility.
+- **Dynamic viewport and safe areas**: Always use `100dvh` (or `min-h-dvh`) rather than `100vh` to avoid mobile
+  browser toolbar shifts. Support notched devices with `env(safe-area-inset-top)` and `env(safe-area-inset-bottom)`.
+- **No hover-exclusive actions**: Mobile touch devices lack hover states. Message action buttons (copy, edit,
+  fork, regenerate) must never rely on `opacity-0 group-hover:opacity-100` without accessible touch or tap-reveal
+  alternatives.
+- **Horizontal overflow containment**: Code blocks, markdown tables, and LaTeX equations must have
+  `min-width: 0` on flex ancestors and dedicated horizontal scroll containers.
 
 ## Branching and pull requests
 
