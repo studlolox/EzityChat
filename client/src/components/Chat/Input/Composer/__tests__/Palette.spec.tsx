@@ -930,4 +930,45 @@ describe('Palette', () => {
       expect(onSelect).not.toHaveBeenCalled();
     });
   });
+
+  describe('mobile drawer', () => {
+    const realMatchMedia = window.matchMedia;
+    beforeEach(() => {
+      window.matchMedia = ((query: string) => ({
+        matches: query === '(max-width: 767px)',
+        media: query,
+        onchange: null,
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        dispatchEvent: jest.fn(),
+      })) as unknown as typeof window.matchMedia;
+    });
+    afterEach(() => {
+      window.matchMedia = realMatchMedia;
+    });
+
+    it('renders as a mobile bottom drawer with a close button', () => {
+      renderPalette();
+      fireEvent.click(screen.getByTestId('composer-palette-button'));
+
+      expect(screen.getByRole('dialog', { name: 'com_ui_composer_palette' })).toBeInTheDocument();
+      expect(screen.getByLabelText('com_ui_close')).toBeInTheDocument();
+    });
+
+    it('closes the drawer when clicking the mobile close button', async () => {
+      renderPalette();
+      fireEvent.click(screen.getByTestId('composer-palette-button'));
+
+      const closeButton = screen.getByLabelText('com_ui_close');
+      fireEvent.click(closeButton);
+
+      await waitFor(() => {
+        expect(
+          screen.queryByRole('dialog', { name: 'com_ui_composer_palette' }),
+        ).not.toBeInTheDocument();
+      });
+    });
+  });
 });

@@ -11,7 +11,7 @@ import { useSetAtom } from 'jotai';
 import * as Ariakit from '@ariakit/react';
 import { isMacPlatform } from '@librechat/chat';
 import { AutoSizer, List } from 'react-virtualized';
-import { Star, Plus, Search, ChevronDown } from 'lucide-react';
+import { Star, Plus, Search, ChevronDown, X } from 'lucide-react';
 import { FilePreview, getFileType } from '@librechat/chat/components';
 import { composerLiftFamily, useReducedMotion, useElementSize } from '@librechat/chat/react';
 import { Button, FileUpload, IconButton, TooltipAnchor, useMediaQuery } from '@librechat/client';
@@ -217,10 +217,11 @@ function Palette({
      with the controlled form, hide-on-interact-outside fired on mousedown and
      the disclosure's own click re-opened it, so clicking `+` while the palette
      was up reopened it instead of closing it. */
-  /* Above the composer on a phone, where the composer sits at the bottom of the
-     screen; the lift below exists only to make room for the downward popup. */
-  const opensUp = useMediaQuery('(max-width: 767px)');
-  const popover = Ariakit.usePopoverStore({ placement: opensUp ? 'top-start' : 'bottom-start' });
+  /* On phones, the palette opens as a bottom drawer to prevent on-screen keyboard
+     overflow; on desktop, it opens downward with composer lift. */
+  const isMobile = useMediaQuery('(max-width: 767px)');
+  const opensUp = isMobile;
+  const popover = Ariakit.usePopoverStore({ placement: 'bottom-start' });
   const open = popover.useState('open');
   const context = useBadgeRowContext();
   const mcpManager = context?.mcpServerManager;
@@ -228,8 +229,16 @@ function Palette({
   useEffect(() => {
     if (open) {
       onOpened?.();
+      if (isMobile) {
+        if (
+          document.activeElement instanceof HTMLElement &&
+          anchorRef.current?.contains(document.activeElement)
+        ) {
+          document.activeElement.blur();
+        }
+      }
     }
-  }, [open, onOpened]);
+  }, [open, onOpened, isMobile, anchorRef]);
   const mounted = popover.useState('mounted');
   const [search, setSearch] = useState('');
   /* Kept across openings rather than reset with the search: someone who uploads
@@ -1169,6 +1178,179 @@ function Palette({
     ],
   );
 
+  const [drawerListHeight, setDrawerListHeight] = useState(0);
+  useEffect(() => {
+    if (!isMobile || !listBodyRef.current) {
+      return;
+    }
+    const element = listBodyRef.current;
+    const updateHeight = () => {
+      const rect = element.getBoundingClientRect();
+      if (rect.height > 0) {
+        setDrawerListHeight(Math.floor(rect.height));
+      }
+    };
+    updateHeight();
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(updateHeight);
+      ro.observe(element);
+      return () => ro.disconnect();
+    }
+  }, [isMobile, mounted]);
+
+  const listHeight = useMemo(() => {
+    if (isMobile) {
+      if (drawerListHeight > 0) {
+        return Math.min(layout.height, drawerListHeight);
+      }
+      const viewportH = typeof window !== 'undefined' ? window.innerHeight : 0;
+      const fallback = viewportH > 0 ? Math.round(viewportH * 0.75) - 90 : LIST_MAX_HEIGHT;
+      return Math.min(layout.height, Math.max(LIST_MAX_HEIGHT, fallback));
+    }
+    return Math.min(layout.height, LIST_MAX_HEIGHT);
+  }, [isMobile, drawerListHeight, layout.height]);
+
+  const handleClose = useCallback(() => {
+    window.requestAnimationFrame(() => {
+      /* Reopened within the frame: that session owns the input and
+         the field must not take focus from it. Handed over to a
+         "Show all" dialog: the dialog owns focus now. */
+      if (popover.getState().open || openingCatalogRef.current) {
+        openingCatalogRef.current = false;
+        return;
+      }
+      const touch = touchInteractionRef.current ?? window.matchMedia('(pointer: coarse)').matches;
+      /* Each opening answers for itself: a later one opened by the
+         upload shortcut must not inherit this session's input. */
+      touchInteractionRef.current = null;
+      if (touch) {
+        return;
+      }
+      anchorRef.current?.querySelector<HTMLElement>('[data-testid="text-input"]')?.focus();
+    });
+  }, [anchorRef, popover]);
+
+  const paletteContent = (
+    <>
+      {isMobile && (
+        <div className="flex shrink-0 flex-col">
+          <div className="flex w-full items-center justify-center pt-2.5 pb-1">
+            <div className="bg-border-heavy/60 h-1.5 w-12 rounded-full" />
+          </div>
+          <div className="flex items-center justify-between px-3.5 pb-2">
+            <span className="text-text-primary text-base font-semibold">
+              {localize('com_ui_composer_palette')}
+            </span>
+            <IconButton
+              label={localize('com_ui_close')}
+              size="sm"
+              variant="ghost"
+              onClick={() => popover.hide()}
+            >
+              <X className="size-4" aria-hidden="true" />
+            </IconButton>
+          </div>
+        </div>
+      )}
+      {/* The whole row is the search target, not just the input: the icon
+          and the padding around it read as part of the field, so clicking
+          them has to land in the field too.
+
+          The popup is portaled but still a React descendant of the
+          composer box, so its clicks bubble through the React tree into
+          the box's own "focus the textarea" handler, which would take
+          the focus straight back off the field. */}
+      <div
+        onClick={(event) => {
+          event.stopPropagation();
+          inputRef.current?.focus();
+        }}
+        className="border-border-light flex shrink-0 cursor-text items-center gap-2 border-b px-3 py-2"
+      >
+        <Search className="text-text-secondary h-4 w-4 shrink-0" aria-hidden="true" />
+        <input
+          ref={inputRef}
+          role="combobox"
+          /* The input only exists while the popover is open, and the
+             grid below stays mounted (empty on a dry search), so the
+             widget state cannot contradict what is on screen. */
+          aria-expanded="true"
+          aria-haspopup="grid"
+          autoComplete="off"
+          aria-controls={listId}
+          aria-activedescendant={
+            activeRow != null && isSelectable(activeRow) ? paletteRowId(activeRow.key) : undefined
+          }
+          aria-describedby={helpId}
+          aria-label={localize('com_ui_composer_palette_search')}
+          placeholder={localize('com_ui_composer_palette_search')}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={handleKeyDown}
+          data-testid="composer-palette-search"
+          className="text-text-primary placeholder:text-text-secondary focus-visible:ring-focus-control w-full rounded-md border-0 bg-transparent text-sm shadow-none ring-0 focus:border-0 focus:ring-0 focus:outline-hidden focus-visible:ring-2 focus-visible:outline-hidden"
+        />
+        <span id={helpId} className="sr-only">
+          {localize('com_ui_composer_palette_help', { 0: FAVORITE_MODIFIER })}
+        </span>
+      </div>
+      {rows.length === 0 && (
+        /* A search that matches nothing is a state change with nothing
+           to focus, so it has to be said rather than only drawn. A
+           sibling of the grid, not a replacement: the combobox keeps
+           pointing at the empty collection it controls. */
+        <div
+          role="status"
+          aria-live="polite"
+          className="text-text-secondary px-2 py-6 text-center text-sm"
+        >
+          {localize('com_ui_composer_no_results')}
+        </div>
+      )}
+      <div
+        ref={listBodyRef}
+        className={cn(
+          'composer-palette-rows',
+          isMobile && 'composer-safe-bottom min-h-0 w-full flex-1 overflow-hidden pb-4',
+          rows.length > 0 && 'p-1.5',
+          instant && 'composer-palette-instant',
+        )}
+      >
+        <AutoSizer disableHeight>
+          {({ width }) => (
+            <List
+              ref={listRef}
+              width={width}
+              overscanRowCount={8}
+              rowCount={rows.length}
+              /* The virtualized scroller is the grid itself, so its rows
+                 are owned by it directly. A presentational scroller
+                 between a wrapper grid and the rows cannot be made
+                 transparent: it always renders `aria-label` and
+                 `aria-readonly`, which only a grid may carry. */
+              id={listId}
+              role="grid"
+              aria-label={localize('com_ui_composer_palette')}
+              containerRole="rowgroup"
+              /* Only the rows in view are mounted, so the grid states
+                 the total and each row its position within it. */
+              containerProps={{ 'aria-rowcount': rows.length }}
+              tabIndex={-1}
+              scrollToIndex={scrollToActive ? activeIndex : undefined}
+              rowRenderer={rowRenderer}
+              rowHeight={measureRow}
+              height={listHeight}
+              className={cn(
+                'focus:outline-hidden',
+                layout.height > listHeight && 'composer-palette-scroll',
+              )}
+            />
+          )}
+        </AutoSizer>
+      </div>
+    </>
+  );
+
   const disclosureLabel = dictating
     ? localize('com_ui_cancel')
     : localize('com_ui_composer_palette');
@@ -1176,9 +1358,7 @@ function Palette({
   return (
     <>
       <FileUpload ref={attach.inputRef} handleFileChange={attach.onFileChange}>
-        {/* Opens downward like the thinking popup on wider screens, and above
-            on a phone; Ariakit flips a downward one above on its own once the
-            composer sits too low for it to fit below. */}
+        {/* Opens as a bottom drawer on mobile, and downward like the thinking popup on wider screens */}
         <Ariakit.PopoverProvider store={popover}>
           {/* The disclosure is the outer component and the tooltip is what it
               renders through, not the other way round: passing a
@@ -1240,155 +1420,55 @@ function Palette({
               />
             </Ariakit.PopoverDisclosure>
           </span>
-          <Ariakit.Popover
-            portal
-            portalElement={getMainLandmark}
-            data-chat-pane-portal={index}
-            preserveTabOrder
-            fixed
-            gutter={POPOVER_GUTTER}
-            ref={popoverRef}
-            unmountOnHide
-            initialFocus={inputRef}
-            /* Ariakit otherwise restores focus to the disclosure, leaving the
-               composer inert after Escape, an outside click, or a terminal
-               upload row. Keep a touch close from summoning the on-screen
-               keyboard, but return keyboard users to the message field for
-               every close path through the popover itself. */
-            autoFocusOnHide={false}
-            onClose={() => {
-              window.requestAnimationFrame(() => {
-                /* Reopened within the frame: that session owns the input and
-                   the field must not take focus from it. Handed over to a
-                   "Show all" dialog: the dialog owns focus now. */
-                if (popover.getState().open || openingCatalogRef.current) {
-                  openingCatalogRef.current = false;
-                  return;
-                }
-                const touch =
-                  touchInteractionRef.current ?? window.matchMedia('(pointer: coarse)').matches;
-                /* Each opening answers for itself: a later one opened by the
-                   upload shortcut must not inherit this session's input. */
-                touchInteractionRef.current = null;
-                if (touch) {
-                  return;
-                }
-                anchorRef.current
-                  ?.querySelector<HTMLElement>('[data-testid="text-input"]')
-                  ?.focus();
-              });
-            }}
-            /* Without this the trigger could not close the palette: mousedown on
-             * it counts as "outside", so Ariakit hid the popup and the button's
-             * own click immediately re-opened it. */
-            hideOnInteractOutside={(event) =>
-              !disclosureRef.current?.contains(event.target as Node)
-            }
-            /* Anchored to the composer, not the `+` button, so the menu spans
-               the composer's width and sits flush above it. */
-            getAnchorRect={() => anchorRef.current?.getBoundingClientRect() ?? null}
-            aria-label={localize('com_ui_composer_palette')}
-            style={{ width: 'var(--popover-anchor-width)' }}
-            className="animate-composer-popover border-border-menu bg-surface-menu rounded-theme-popover z-50 flex max-w-[95vw] flex-col overflow-hidden border shadow-lg outline-hidden"
-          >
-            {/* The whole row is the search target, not just the input: the icon
-                and the padding around it read as part of the field, so clicking
-                them has to land in the field too.
-
-                The popup is portaled but still a React descendant of the
-                composer box, so its clicks bubble through the React tree into
-                the box's own "focus the textarea" handler, which would take
-                the focus straight back off the field. */}
-            <div
-              onClick={(event) => {
-                event.stopPropagation();
-                inputRef.current?.focus();
-              }}
-              className="border-border-light flex cursor-text items-center gap-2 border-b px-3 py-2"
+          {isMobile ? (
+            <Ariakit.Dialog
+              store={popover}
+              portal
+              portalElement={getMainLandmark}
+              data-chat-pane-portal={index}
+              modal
+              backdrop={
+                <div
+                  className="bg-surface-media-overlay/60 fixed inset-0 z-50 backdrop-blur-xs transition-opacity duration-200"
+                  onClick={() => popover.hide()}
+                />
+              }
+              unmountOnHide
+              initialFocus={null}
+              autoFocusOnHide={false}
+              onClose={handleClose}
+              hideOnInteractOutside={(event) =>
+                !disclosureRef.current?.contains(event.target as Node)
+              }
+              aria-label={localize('com_ui_composer_palette')}
+              className="border-border-menu bg-surface-menu animate-in fade-in-0 slide-in-from-bottom fixed inset-x-0 bottom-0 z-50 flex h-[75dvh] max-h-[75dvh] flex-col overflow-hidden rounded-t-2xl border-t shadow-2xl outline-hidden duration-250 ease-out"
             >
-              <Search className="text-text-secondary h-4 w-4 shrink-0" aria-hidden="true" />
-              <input
-                ref={inputRef}
-                role="combobox"
-                /* The input only exists while the popover is open, and the
-                   grid below stays mounted (empty on a dry search), so the
-                   widget state cannot contradict what is on screen. */
-                aria-expanded="true"
-                aria-haspopup="grid"
-                autoComplete="off"
-                aria-controls={listId}
-                aria-activedescendant={
-                  activeRow != null && isSelectable(activeRow)
-                    ? paletteRowId(activeRow.key)
-                    : undefined
-                }
-                aria-describedby={helpId}
-                aria-label={localize('com_ui_composer_palette_search')}
-                placeholder={localize('com_ui_composer_palette_search')}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={handleKeyDown}
-                data-testid="composer-palette-search"
-                className="text-text-primary placeholder:text-text-secondary focus-visible:ring-focus-control w-full rounded-md border-0 bg-transparent text-sm shadow-none ring-0 focus:border-0 focus:ring-0 focus:outline-hidden focus-visible:ring-2 focus-visible:outline-hidden"
-              />
-              <span id={helpId} className="sr-only">
-                {localize('com_ui_composer_palette_help', { 0: FAVORITE_MODIFIER })}
-              </span>
-            </div>
-            {rows.length === 0 && (
-              /* A search that matches nothing is a state change with nothing
-                 to focus, so it has to be said rather than only drawn. A
-                 sibling of the grid, not a replacement: the combobox keeps
-                 pointing at the empty collection it controls. */
-              <div
-                role="status"
-                aria-live="polite"
-                className="text-text-secondary px-2 py-6 text-center text-sm"
-              >
-                {localize('com_ui_composer_no_results')}
-              </div>
-            )}
-            <div
-              ref={listBodyRef}
-              className={cn(
-                'composer-palette-rows',
-                rows.length > 0 && 'p-1.5',
-                instant && 'composer-palette-instant',
-              )}
+              {paletteContent}
+            </Ariakit.Dialog>
+          ) : (
+            <Ariakit.Popover
+              portal
+              portalElement={getMainLandmark}
+              data-chat-pane-portal={index}
+              preserveTabOrder
+              fixed
+              gutter={POPOVER_GUTTER}
+              ref={popoverRef}
+              unmountOnHide
+              initialFocus={inputRef}
+              autoFocusOnHide={false}
+              onClose={handleClose}
+              hideOnInteractOutside={(event) =>
+                !disclosureRef.current?.contains(event.target as Node)
+              }
+              getAnchorRect={() => anchorRef.current?.getBoundingClientRect() ?? null}
+              aria-label={localize('com_ui_composer_palette')}
+              style={{ width: 'var(--popover-anchor-width)' }}
+              className="animate-composer-popover border-border-menu bg-surface-menu rounded-theme-popover z-50 flex max-w-[95vw] flex-col overflow-hidden border shadow-lg outline-hidden"
             >
-              <AutoSizer disableHeight>
-                {({ width }) => (
-                  <List
-                    ref={listRef}
-                    width={width}
-                    overscanRowCount={8}
-                    rowCount={rows.length}
-                    /* The virtualized scroller is the grid itself, so its rows
-                       are owned by it directly. A presentational scroller
-                       between a wrapper grid and the rows cannot be made
-                       transparent: it always renders `aria-label` and
-                       `aria-readonly`, which only a grid may carry. */
-                    id={listId}
-                    role="grid"
-                    aria-label={localize('com_ui_composer_palette')}
-                    containerRole="rowgroup"
-                    /* Only the rows in view are mounted, so the grid states
-                       the total and each row its position within it. */
-                    containerProps={{ 'aria-rowcount': rows.length }}
-                    tabIndex={-1}
-                    scrollToIndex={scrollToActive ? activeIndex : undefined}
-                    rowRenderer={rowRenderer}
-                    rowHeight={measureRow}
-                    height={Math.min(layout.height, LIST_MAX_HEIGHT)}
-                    className={cn(
-                      'focus:outline-hidden',
-                      layout.height > LIST_MAX_HEIGHT && 'composer-palette-scroll',
-                    )}
-                  />
-                )}
-              </AutoSizer>
-            </div>
-          </Ariakit.Popover>
+              {paletteContent}
+            </Ariakit.Popover>
+          )}
         </Ariakit.PopoverProvider>
       </FileUpload>
       <SharePointPickerDialog
