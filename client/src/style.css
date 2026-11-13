@@ -1505,11 +1505,41 @@ html {
   padding-top: calc(0.5rem + env(safe-area-inset-top, 0px));
 }
 
+@utility header-safe-top-p3 {
+  padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));
+}
+
 @utility messages-safe-top {
   padding-top: calc(3.5rem + env(safe-area-inset-top, 0px));
 }
 
 @utility composer-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@utility drawer-safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+  height: calc(3.5rem + env(safe-area-inset-top, 0px));
+}
+
+@utility artifact-header-safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+  height: calc(3.25rem + env(safe-area-inset-top, 0px));
+}
+
+@utility dialog-safe-top {
+  padding-top: calc(1.5rem + env(safe-area-inset-top, 0px));
+}
+
+@utility dialog-safe-bottom {
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+@utility safe-top-inset {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+@utility safe-bottom-inset {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 

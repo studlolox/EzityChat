@@ -201,7 +201,7 @@ export default function LibraryHeader({
   return (
     <div className="border-border-light shrink-0 border-b">
       {/* Top Toolbar Row */}
-      <div className="flex items-center gap-2 p-3">
+      <div className={cn('flex items-center gap-2 p-3', isSmallScreen && 'header-safe-top-p3')}>
         {isSmallScreen && <OpenSidebar className="size-9 shrink-0" />}
 
         {/* Search Bar */}

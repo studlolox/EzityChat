@@ -923,7 +923,10 @@ export default function DialogImage({
           )}
 
           {/* Close button - top left */}
-          <div className="absolute inset-s-4 top-4 z-20">
+          <div
+            className="absolute inset-s-4 z-20"
+            style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
+          >
             <TooltipAnchor
               zIndex={TOOLTIP_Z_INDEX}
               description={localize('com_ui_close')}
@@ -945,7 +948,8 @@ export default function DialogImage({
           {/* Inpaint Studio Floating Toolbar (Centered Top) */}
           {isMaskingMode && (
             <div
-              className="bg-surface-primary/95 border-border-medium absolute inset-x-0 top-4 z-30 mx-auto flex w-fit items-center justify-center gap-2 rounded-2xl border px-4 py-2 shadow-2xl backdrop-blur-md"
+              className="bg-surface-primary/95 border-border-medium absolute inset-x-0 z-30 mx-auto flex w-fit items-center justify-center gap-2 rounded-2xl border px-4 py-2 shadow-2xl backdrop-blur-md"
+              style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Brush Button */}
@@ -1062,9 +1066,10 @@ export default function DialogImage({
 
           {/* Action buttons - top right */}
           <div
-            className={`absolute top-4 z-20 flex items-center gap-2 transition-all duration-300 ${
+            className={`absolute z-20 flex items-center gap-2 transition-all duration-300 ${
               detailsBeside ? 'inset-e-[21rem]' : 'inset-e-4'
             }`}
+            style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
           >
             {/* Inpaint Mode Toggle */}
             {onEditImage != null && (
@@ -1244,7 +1249,8 @@ export default function DialogImage({
           {/* Conversational Edit Prompt Bar (Bottom) */}
           {isMaskingMode && (
             <div
-              className="bg-surface-primary/95 border-border-medium absolute inset-x-4 bottom-6 z-40 mx-auto flex max-w-xl flex-col gap-2 rounded-2xl border p-2 shadow-2xl backdrop-blur-md"
+              className="bg-surface-primary/95 border-border-medium absolute inset-x-4 z-40 mx-auto flex max-w-xl flex-col gap-2 rounded-2xl border p-2 shadow-2xl backdrop-blur-md"
+              style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
               onClick={(e) => e.stopPropagation()}
             >
               {editError && (
@@ -1287,7 +1293,7 @@ export default function DialogImage({
           {showDetails && !isMaskingMode && (
             <div
               data-side-panel
-              className={`bg-surface-primary border-text-on-media/10 fixed inset-e-0 top-0 z-30 h-full w-80 max-w-full transform touch-pan-y border-s shadow-2xl transition-transform duration-300 ${
+              className={`bg-surface-primary border-text-on-media/10 safe-top-inset safe-bottom-inset fixed inset-e-0 top-0 z-30 h-full w-80 max-w-full transform touch-pan-y border-s shadow-2xl transition-transform duration-300 ${
                 isPromptOpen ? 'translate-x-0' : 'translate-x-full rtl:-translate-x-full'
               }`}
               onClick={(e) => e.stopPropagation()}

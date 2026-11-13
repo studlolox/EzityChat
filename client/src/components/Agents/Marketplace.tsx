@@ -13,6 +13,7 @@ import MineFilterToggle from './MineFilterToggle';
 import CategoryTabs from './CategoryTabs';
 import SearchBar from './SearchBar';
 import AgentGrid from './AgentGrid';
+import { cn } from '~/utils';
 
 interface AgentMarketplaceProps {
   className?: string;
@@ -140,7 +141,9 @@ const AgentMarketplace: React.FC<AgentMarketplaceProps> = ({ className = '' }) =
             {localize('com_agents_marketplace')}
           </h1>
           <div className="border-border-light shrink-0 border-b">
-            <div className="flex items-center gap-2 p-3">
+            <div
+              className={cn('flex items-center gap-2 p-3', isSmallScreen && 'header-safe-top-p3')}
+            >
               {isSmallScreen && <OpenSidebar className="size-9 shrink-0 rounded-lg" />}
               <SearchBar value={searchQuery} onSearch={handleSearch} className="min-w-0 flex-1" />
               <MarketplaceAdminSettings />

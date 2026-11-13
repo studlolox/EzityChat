@@ -523,7 +523,8 @@ export default function Artifacts() {
           {/* Header */}
           <div
             className={cn(
-              'border-border-light bg-surface-primary-alt flex h-[3.25rem] shrink-0 items-center justify-between gap-2 border-b p-2 transition-all duration-300 motion-reduce:transition-none',
+              'border-border-light bg-surface-primary-alt flex shrink-0 items-center justify-between gap-2 border-b p-2 transition-all duration-300 motion-reduce:transition-none',
+              isMobile && isFullscreen ? 'artifact-header-safe-top' : 'h-[3.25rem]',
               isMobile ? 'justify-center' : 'overflow-hidden',
             )}
           >

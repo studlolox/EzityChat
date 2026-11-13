@@ -50,7 +50,7 @@ function Header({
   }, [expanded]);
 
   return (
-    <div className="border-border-light flex h-14 shrink-0 items-center gap-2 border-b px-2">
+    <div className="border-border-light drawer-safe-top flex shrink-0 items-center gap-2 border-b px-2">
       <Button
         ref={closeRef}
         /**
