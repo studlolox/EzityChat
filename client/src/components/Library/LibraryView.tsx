@@ -216,6 +216,62 @@ export default function LibraryView() {
     await downloadLibraryItemsAsZip([item], user?.id);
   };
 
+  const handleShareItem = async (item: UnifiedLibraryItem) => {
+    let targetUrl: string | undefined;
+    if (item.kind === 'image' && item.previewUrl) {
+      targetUrl = toAbsoluteFilePath(item.previewUrl, apiBaseUrl());
+    } else if (item.file?.filepath) {
+      targetUrl = toAbsoluteFilePath(item.file.filepath, apiBaseUrl());
+    } else if (item.previewUrl) {
+      targetUrl = toAbsoluteFilePath(item.previewUrl, apiBaseUrl());
+    }
+
+    const filename = item.file?.filename || item.title || 'file';
+
+    if (targetUrl) {
+      try {
+        const response = await fetch(targetUrl);
+        if (response.ok) {
+          const blob = await response.blob();
+          const mimeType = blob.type || 'application/octet-stream';
+          const file = new File([blob], filename, { type: mimeType });
+
+          if (
+            typeof navigator !== 'undefined' &&
+            typeof navigator.canShare === 'function' &&
+            navigator.canShare({ files: [file] })
+          ) {
+            await navigator.share({
+              files: [file],
+              title: item.title || filename,
+            });
+            return;
+          }
+        }
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          return;
+        }
+      }
+
+      if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+        try {
+          await navigator.share({
+            title: item.title || filename,
+            url: targetUrl,
+          });
+          return;
+        } catch (err: unknown) {
+          if (err instanceof Error && err.name === 'AbortError') {
+            return;
+          }
+        }
+      }
+    }
+
+    await handleDownloadItem(item);
+  };
+
   const handleBulkDownload = async () => {
     const selected = filteredItems.filter((i) => selectedItemIds.has(i.id));
     if (selected.length === 0) return;
@@ -363,6 +419,7 @@ export default function LibraryView() {
           onOpenCanvasBoard={handleOpenCanvasBoard}
           onPreviewFile={handlePreviewFile}
           onNavigateToChat={handleNavigateToChat}
+          onShareItem={handleShareItem}
           onDownloadItem={handleDownloadItem}
           onDeleteItem={handleDeleteItem}
           onShowDetails={handleShowDetails}
@@ -380,6 +437,7 @@ export default function LibraryView() {
         onOpenCanvasBoard={handleOpenCanvasBoard}
         onPreviewFile={handlePreviewFile}
         onNavigateToChat={handleNavigateToChat}
+        onShareItem={handleShareItem}
         onDownloadItem={handleDownloadItem}
         onDeleteItem={handleDeleteItem}
         onShowDetails={handleShowDetails}
@@ -506,6 +564,7 @@ export default function LibraryView() {
         onOpenChange={(open) => setDetailsDialog((prev) => ({ ...prev, open }))}
         item={detailsDialog.item}
         onPreview={handlePreviewFile}
+        onShare={handleShareItem}
         onDownload={handleDownloadItem}
         onNavigateToChat={handleNavigateToChat}
       />

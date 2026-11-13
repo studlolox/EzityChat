@@ -14,6 +14,7 @@ import {
   Layers,
   MessageSquare,
   Network,
+  Share2,
   Square,
   Trash2,
 } from 'lucide-react';
@@ -28,6 +29,7 @@ interface LibraryListProps {
   onOpenCanvasBoard: (boardId: string, conversationId?: string) => void;
   onPreviewFile: (item: UnifiedLibraryItem) => void;
   onNavigateToChat: (conversationId: string) => void;
+  onShareItem?: (item: UnifiedLibraryItem) => void;
   onDownloadItem: (item: UnifiedLibraryItem) => void;
   onDeleteItem: (item: UnifiedLibraryItem) => void;
   onShowDetails?: (item: UnifiedLibraryItem) => void;
@@ -50,12 +52,14 @@ function getThumbnailUrl(previewUrl?: string): string | undefined {
 function ListRowActionMenu({
   item,
   onPreview,
+  onShare,
   onDownload,
   onDelete,
   onShowDetails,
 }: {
   item: UnifiedLibraryItem;
   onPreview: (item: UnifiedLibraryItem) => void;
+  onShare?: (item: UnifiedLibraryItem) => void;
   onDownload: (item: UnifiedLibraryItem) => void;
   onDelete: (item: UnifiedLibraryItem) => void;
   onShowDetails?: (item: UnifiedLibraryItem) => void;
@@ -72,6 +76,16 @@ function ListRowActionMenu({
       onClick: (e) => {
         e?.stopPropagation?.();
         onPreview(item);
+        setIsOpen(false);
+      },
+    },
+    {
+      id: `list-share-${item.id}`,
+      label: localize('com_ui_share'),
+      icon: <Share2 className="size-4" />,
+      onClick: (e) => {
+        e?.stopPropagation?.();
+        onShare?.(item);
         setIsOpen(false);
       },
     },
@@ -140,6 +154,7 @@ export default function LibraryList({
   onOpenCanvasBoard,
   onPreviewFile,
   onNavigateToChat,
+  onShareItem,
   onDownloadItem,
   onDeleteItem,
   onShowDetails,
@@ -368,6 +383,7 @@ export default function LibraryList({
                     <ListRowActionMenu
                       item={item}
                       onPreview={handlePreview}
+                      onShare={onShareItem}
                       onDownload={onDownloadItem}
                       onDelete={onDeleteItem}
                       onShowDetails={onShowDetails}

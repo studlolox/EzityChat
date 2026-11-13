@@ -10,6 +10,7 @@ interface LibraryGridProps {
   onOpenCanvasBoard: (boardId: string, conversationId?: string) => void;
   onPreviewFile: (item: UnifiedLibraryItem) => void;
   onNavigateToChat: (conversationId: string) => void;
+  onShareItem?: (item: UnifiedLibraryItem) => void;
   onDownloadItem: (item: UnifiedLibraryItem) => void;
   onDeleteItem: (item: UnifiedLibraryItem) => void;
   onShowDetails?: (item: UnifiedLibraryItem) => void;
@@ -24,6 +25,7 @@ export default function LibraryGrid({
   onOpenCanvasBoard,
   onPreviewFile,
   onNavigateToChat,
+  onShareItem,
   onDownloadItem,
   onDeleteItem,
   onShowDetails,
@@ -59,6 +61,7 @@ export default function LibraryGrid({
           onOpenCanvasBoard={onOpenCanvasBoard}
           onPreviewFile={onPreviewFile}
           onNavigateToChat={onNavigateToChat}
+          onShareItem={onShareItem}
           onDownloadItem={onDownloadItem}
           onDeleteItem={onDeleteItem}
           onShowDetails={onShowDetails}

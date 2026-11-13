@@ -46,6 +46,37 @@ describe('DialogImage tooltips', () => {
     expect(Number(tooltip.style.zIndex)).toBeGreaterThan(LIGHTBOX_Z_INDEX);
   });
 
+  it('layers the share tooltip above the lightbox', async () => {
+    render(
+      <DialogImage isOpen onOpenChange={jest.fn()} src="/media.png" downloadImage={jest.fn()} />,
+    );
+
+    const share = screen.getByRole('button', { name: 'com_ui_share' });
+    fireEvent.mouseEnter(share);
+    fireEvent.mouseMove(share);
+
+    const tooltip = await screen.findByRole('tooltip', undefined, { timeout: 3000 });
+    expect(Number(tooltip.style.zIndex)).toBeGreaterThan(LIGHTBOX_Z_INDEX);
+  });
+
+  it('invokes onShare callback when share button is clicked', () => {
+    const onShare = jest.fn();
+    render(
+      <DialogImage
+        isOpen
+        onOpenChange={jest.fn()}
+        src="/media.png"
+        downloadImage={jest.fn()}
+        onShare={onShare}
+      />,
+    );
+
+    const share = screen.getByRole('button', { name: 'com_ui_share' });
+    fireEvent.click(share);
+
+    expect(onShare).toHaveBeenCalledTimes(1);
+  });
+
   it('rotates the image 90 degrees when clicking rotate', () => {
     render(
       <DialogImage isOpen onOpenChange={jest.fn()} src="/media.png" downloadImage={jest.fn()} />,

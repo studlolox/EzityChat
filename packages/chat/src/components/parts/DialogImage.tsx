@@ -20,6 +20,7 @@ import {
   Trash2,
   Sparkles,
   Loader2,
+  Share2,
 } from 'lucide-react';
 
 /** The lightbox is z-250 and not an OGDialog, so its tooltips would keep the default 150 and sit behind it. */
@@ -68,6 +69,7 @@ export default function DialogImage({
   showDetails = true,
   title,
   onEditImage,
+  onShare,
 }: {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -86,10 +88,13 @@ export default function DialogImage({
   title?: string;
   /** Callback invoked when the user submits an inpaint / image edit. */
   onEditImage?: (params: InpaintEditParams) => Promise<void> | void;
+  /** Optional custom share callback; if omitted, native Web Share API with file is used. */
+  onShare?: () => Promise<void> | void;
 }): React.ReactElement | null {
   const localize = useLocalize();
   const [isPromptOpen, setIsPromptOpen] = useState(false);
   const [imageSize, setImageSize] = useState<string | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
 
   // Zoom, pan & rotation state
   const [zoom, setZoom] = useState(1);
@@ -181,6 +186,56 @@ export default function DialogImage({
     resetZoom();
     setRotation(0);
   }, [resetZoom]);
+
+  const handleShare = useCallback(async () => {
+    if (onShare) {
+      await onShare();
+      return;
+    }
+    if (!src) {
+      return;
+    }
+    setIsSharing(true);
+    try {
+      const filename = title || 'image.png';
+      const response = await fetch(src);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.status}`);
+      }
+      const blob = await response.blob();
+      const mimeType = blob.type || 'image/png';
+      const file = new File([blob], filename, { type: mimeType });
+
+      if (
+        typeof navigator !== 'undefined' &&
+        typeof navigator.canShare === 'function' &&
+        navigator.canShare({ files: [file] })
+      ) {
+        await navigator.share({
+          files: [file],
+          title: filename,
+        });
+        return;
+      }
+
+      if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+        await navigator.share({
+          title: filename,
+          url: src,
+        });
+        return;
+      }
+
+      downloadImage();
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
+      downloadImage();
+    } finally {
+      setIsSharing(false);
+    }
+  }, [downloadImage, onShare, src, title]);
 
   const getCursorClass = (): string => {
     if (isMaskingMode) return 'cursor-crosshair';
@@ -1073,6 +1128,28 @@ export default function DialogImage({
                 }
               />
             )}
+
+            {/* Share */}
+            <TooltipAnchor
+              zIndex={TOOLTIP_Z_INDEX}
+              description={localize('com_ui_share')}
+              render={
+                <Button
+                  onClick={handleShare}
+                  disabled={isSharing}
+                  variant="media"
+                  size="bare"
+                  className="h-10 w-10"
+                  aria-label={localize('com_ui_share')}
+                >
+                  {isSharing ? (
+                    <Loader2 className="size-5 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Share2 className="size-5" aria-hidden="true" />
+                  )}
+                </Button>
+              }
+            />
 
             {/* Download */}
             <TooltipAnchor

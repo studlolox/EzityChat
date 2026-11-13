@@ -19,6 +19,7 @@ import {
   Maximize2,
   MessageSquare,
   Network,
+  Share2,
   Tag,
 } from 'lucide-react';
 import type { UnifiedLibraryItem } from './types';
@@ -31,6 +32,7 @@ interface LibraryFileDetailsModalProps {
   onOpenChange: (open: boolean) => void;
   item: UnifiedLibraryItem | null;
   onPreview?: (item: UnifiedLibraryItem) => void;
+  onShare?: (item: UnifiedLibraryItem) => void;
   onDownload?: (item: UnifiedLibraryItem) => void;
   onNavigateToChat?: (conversationId: string) => void;
 }
@@ -71,6 +73,7 @@ export default function LibraryFileDetailsModal({
   onOpenChange,
   item,
   onPreview,
+  onShare,
   onDownload,
   onNavigateToChat,
 }: LibraryFileDetailsModalProps) {
@@ -229,6 +232,21 @@ export default function LibraryFileDetailsModal({
             >
               <Eye className="me-1.5 size-3.5" />
               {localize('com_ui_preview')}
+            </Button>
+          )}
+
+          {onShare && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full sm:w-auto"
+              onClick={() => {
+                onShare(item);
+                onOpenChange(false);
+              }}
+            >
+              <Share2 className="me-1.5 size-3.5" />
+              {localize('com_ui_share')}
             </Button>
           )}
 

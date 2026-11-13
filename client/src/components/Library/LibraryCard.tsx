@@ -11,6 +11,7 @@ import {
   FileText,
   Info,
   Network,
+  Share2,
   Square,
   Trash2,
 } from 'lucide-react';
@@ -28,6 +29,7 @@ interface LibraryCardProps {
   onOpenCanvasBoard: (boardId: string, conversationId?: string) => void;
   onPreviewFile: (item: UnifiedLibraryItem) => void;
   onNavigateToChat: (conversationId: string) => void;
+  onShareItem?: (item: UnifiedLibraryItem) => void;
   onDownloadItem: (item: UnifiedLibraryItem) => void;
   onDeleteItem: (item: UnifiedLibraryItem) => void;
   onShowDetails?: (item: UnifiedLibraryItem) => void;
@@ -137,6 +139,7 @@ export default function LibraryCard({
   onOpenCanvasBoard,
   onPreviewFile,
   onNavigateToChat: _onNavigateToChat,
+  onShareItem,
   onDownloadItem,
   onDeleteItem,
   onShowDetails,
@@ -198,6 +201,16 @@ export default function LibraryCard({
       onClick: (e) => {
         e?.stopPropagation?.();
         handlePreview();
+        setIsMenuOpen(false);
+      },
+    },
+    {
+      id: `share-${item.id}`,
+      label: localize('com_ui_share'),
+      icon: <Share2 className="size-4" />,
+      onClick: (e) => {
+        e?.stopPropagation?.();
+        onShareItem?.(item);
         setIsMenuOpen(false);
       },
     },
